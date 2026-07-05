@@ -3,6 +3,8 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { UserService, UserProfile, Address } from '../../services/user.service';
+import { AddressService } from '../../services/address.service';
+import { Address as AddressModel } from '../../pages/address/address';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -27,15 +29,7 @@ export class Account implements OnInit {
   formData = {
     name: '',
     phone: '',
-    profilePicture: '',
-    address: {
-      addressLine1: '',
-      addressLine2: '',
-      city: '',
-      state: '',
-      pincode: '',
-      landmark: ''
-    }
+    profilePicture: ''
   };
 
   // Original data for cancel functionality
@@ -52,8 +46,27 @@ export class Account implements OnInit {
   passwordErrorMessage = '';
   passwordSuccessMessage = '';
 
+  // Address Management
+  addresses: AddressModel[] = [];
+  showAddressForm = false;
+  isAddressSaving = false;
+  addressMessage = '';
+  addressError = '';
+  newAddress = {
+    name: '',
+    phone: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    pincode: '',
+    landmark: '',
+    isDefault: false
+  };
+
   constructor(
     private userService: UserService,
+    private addressService: AddressService,
     private authService: AuthService,
     private router: Router,
     private cdr: ChangeDetectorRef,
@@ -81,6 +94,7 @@ export class Account implements OnInit {
     this.cdr.markForCheck();
 
     this.loadUserProfile();
+    this.loadAddresses();
   }
 
   loadUserProfile() {
@@ -116,23 +130,18 @@ export class Account implements OnInit {
     });
   }
 
+  loadAddresses() {
+    this.addressService.loadAddresses();
+    this.addressService.addresses$.subscribe(addresses => {
+      this.addresses = addresses;
+      this.cdr.detectChanges();
+    });
+  }
+
   populateFormData(user: UserProfile) {
     this.formData.name = user.name || '';
     this.formData.phone = user.phone || '';
     this.formData.profilePicture = user.profilePicture || '';
-
-    // Get default address if exists
-    const defaultAddress = user.addresses?.find(addr => addr.isDefault);
-    if (defaultAddress) {
-      this.formData.address = {
-        addressLine1: defaultAddress.addressLine1 || '',
-        addressLine2: defaultAddress.addressLine2 || '',
-        city: defaultAddress.city || '',
-        state: defaultAddress.state || '',
-        pincode: defaultAddress.pincode || '',
-        landmark: defaultAddress.landmark || ''
-      };
-    }
 
     // Save original data for cancel functionality
     this.originalData = JSON.parse(JSON.stringify(this.formData));
@@ -174,8 +183,7 @@ export class Account implements OnInit {
     const updateData = {
       name: this.formData.name,
       phone: this.formData.phone,
-      profilePicture: this.formData.profilePicture,
-      address: this.formData.address
+      profilePicture: this.formData.profilePicture
     };
 
     this.userService.updateUserProfile(updateData).subscribe({
@@ -210,6 +218,122 @@ export class Account implements OnInit {
           this.errorMessage = error.error?.message || 'Failed to update profile. Please try again.';
           this.isSaving = false;
           this.cdr.markForCheck();
+          this.cdr.detectChanges();
+        });
+      }
+    });
+  }
+
+  // Address Management Methods
+  toggleAddressForm() {
+    this.showAddressForm = !this.showAddressForm;
+    this.addressError = '';
+    this.addressMessage = '';
+    if (!this.showAddressForm) {
+      this.resetAddressForm();
+    }
+  }
+
+  resetAddressForm() {
+    this.newAddress = {
+      name: '',
+      phone: '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      pincode: '',
+      landmark: '',
+      isDefault: false
+    };
+  }
+
+  addAddress() {
+    if (!this.newAddress.name.trim() || !this.newAddress.phone.trim() ||
+        !this.newAddress.addressLine1.trim() || !this.newAddress.city.trim() ||
+        !this.newAddress.state.trim() || !this.newAddress.pincode.trim()) {
+      this.addressError = 'Please fill in all required fields';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.isAddressSaving = true;
+    this.addressError = '';
+
+    this.addressService.addAddress(this.newAddress).subscribe({
+      next: () => {
+        this.zone.run(() => {
+          this.addressMessage = 'Address added successfully!';
+          this.isAddressSaving = false;
+          this.showAddressForm = false;
+          this.resetAddressForm();
+          this.cdr.detectChanges();
+
+          setTimeout(() => {
+            this.zone.run(() => {
+              this.addressMessage = '';
+              this.cdr.detectChanges();
+            });
+          }, 3000);
+        });
+      },
+      error: (error) => {
+        this.zone.run(() => {
+          console.error('Error adding address:', error);
+          this.addressError = 'Failed to add address. Please try again.';
+          this.isAddressSaving = false;
+          this.cdr.detectChanges();
+        });
+      }
+    });
+  }
+
+  setDefaultAddress(index: number) {
+    this.addressService.setDefaultAddress(index).subscribe({
+      next: () => {
+        this.zone.run(() => {
+          this.addressMessage = 'Default address updated!';
+          this.cdr.detectChanges();
+          setTimeout(() => {
+            this.zone.run(() => {
+              this.addressMessage = '';
+              this.cdr.detectChanges();
+            });
+          }, 3000);
+        });
+      },
+      error: (error) => {
+        this.zone.run(() => {
+          console.error('Error setting default address:', error);
+          this.addressError = 'Failed to set default address.';
+          this.cdr.detectChanges();
+        });
+      }
+    });
+  }
+
+  deleteAddress(index: number) {
+    if (!confirm('Are you sure you want to delete this address?')) {
+      return;
+    }
+
+    this.addressService.deleteAddress(index).subscribe({
+      next: () => {
+        this.zone.run(() => {
+          this.addressMessage = 'Address deleted successfully!';
+          this.cdr.detectChanges();
+          setTimeout(() => {
+            this.zone.run(() => {
+              this.addressMessage = '';
+              this.cdr.detectChanges();
+            });
+          }, 3000);
+        });
+      },
+      error: (error) => {
+        this.zone.run(() => {
+          console.error('Error deleting address:', error);
+          this.addressError = 'Failed to delete address.';
           this.cdr.detectChanges();
         });
       }
@@ -283,4 +407,4 @@ export class Account implements OnInit {
     const initial = this.formData.name.charAt(0).toUpperCase() || 'U';
     return `https://ui-avatars.com/api/?name=${initial}&size=200&background=16a34a&color=fff&bold=true`;
   }
-}
+}

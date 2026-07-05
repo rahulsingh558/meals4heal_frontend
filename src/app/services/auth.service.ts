@@ -93,6 +93,21 @@ export class AuthService {
             );
     }
 
+    sendEmailOtp(email: string): Observable<any> {
+        return this.http.post(`${this.API_URL}/email/send-otp`, { email });
+    }
+
+    verifyEmailOtp(email: string, otp: string): Observable<AuthResponse> {
+        return this.http.post<AuthResponse>(`${this.API_URL}/email/verify-otp`, { email, otp })
+            .pipe(
+                tap(response => {
+                    if (response.token && response.user) {
+                        this.handleAuthSuccess(response);
+                    }
+                })
+            );
+    }
+
     forgotPassword(identifier: string): Observable<any> {
         return this.http.post(`${this.API_URL}/forgot-password`, { identifier });
     }

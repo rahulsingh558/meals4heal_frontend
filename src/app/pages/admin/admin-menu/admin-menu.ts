@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FoodApiService, ApiFood } from '../../../services/food-api.service';
-
+import { environment } from '../../../../environments/environment';
 interface Addon {
   id: number;
   name: string;
@@ -15,7 +15,9 @@ interface Addon {
   imports: [CommonModule, FormsModule],
   templateUrl: './admin-menu.html',
 })
-export class AdminMenuComponent {
+export class AdminMenuComponent implements OnInit {
+  isBrowser = false;
+  backendUrl = environment.backendUrl;
   items: ApiFood[] = [];
   loading = false;
   showMenuForm = false;
@@ -52,14 +54,20 @@ export class AdminMenuComponent {
     { id: 7, name: 'Broccoli', price: 25 },
     { id: 8, name: 'Beans', price: 15 },
     { id: 9, name: 'Peas', price: 15 },
-    { id: 10, name: 'Spinach', price: 20 },
     { id: 11, name: 'Capsicum', price: 20 },
     { id: 12, name: 'Cheese', price: 30 },
     { id: 13, name: 'Mushroom', price: 25 },
-    { id: 14, name: 'Bell Pepper', price: 15 },
   ];
 
-  constructor(private foodApi: FoodApiService) {
+  constructor(
+    private foodApi: FoodApiService,
+    private cdr: ChangeDetectorRef,
+    @Inject(PLATFORM_ID) platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
+
+  ngOnInit() {
     this.loadItems();
   }
 
@@ -69,11 +77,13 @@ export class AdminMenuComponent {
       next: (foods) => {
         this.items = foods;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Failed to load foods:', err);
         this.showError('Failed to load menu items');
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -95,7 +105,7 @@ export class AdminMenuComponent {
       type: item.type,
       category: item.category,
       image: null,
-      imagePreview: `https://meal-to-heal-backend.onrender.com${item.image}`,
+      imagePreview: `${environment.backendUrl}${item.image}`,
       defaultAddons: [...item.defaultAddons],
       extraAddons: [...item.extraAddons],
     };

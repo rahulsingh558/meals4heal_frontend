@@ -11,8 +11,11 @@
                     <button type="button" (click)="authWithGoogle()" class="social-btn">
                         <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
                     </button>
-                    <button type="button" (click)="openWhatsAppModal()" class="social-btn">
+                    <button type="button" (click)="openWhatsAppModal()" class="social-btn" title="Login with WhatsApp">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp">
+                    </button>
+                    <button type="button" (click)="openEmailModal()" class="social-btn" title="Login with Email OTP">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="#2E7D32"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
                     </button>
                 </div>
 
@@ -50,8 +53,11 @@
                     <button type="button" (click)="authWithGoogle()" class="social-btn">
                         <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
                     </button>
-                    <button type="button" (click)="openWhatsAppModal()" class="social-btn">
+                    <button type="button" (click)="openWhatsAppModal()" class="social-btn" title="Login with WhatsApp">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp">
+                    </button>
+                    <button type="button" (click)="openEmailModal()" class="social-btn" title="Login with Email OTP">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="#2E7D32"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
                     </button>
                 </div>
 
@@ -118,11 +124,11 @@
             <p class="error-text">{{ otpError }}</p>
             }
 
-            <button (click)="requestOTP()" [disabled]="!whatsappNumber || whatsappNumber.length < 10"
+            <button (click)="requestOTP()" [disabled]="!whatsappNumber || whatsappNumber.length < 10 || isSendingOtp"
                 class="whatsapp-btn">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" class="whatsapp-icon"
                     alt="">
-                Send OTP
+                {{ isSendingOtp ? 'Sending...' : 'Send OTP' }}
             </button>
         </div>
         }
@@ -157,6 +163,74 @@
                     <p class="resend-timer">Resend OTP in <span>{{resendTimer}}s</span></p>
                     } @else {
                     <button (click)="resendOTP()" class="resend-btn">Resend OTP</button>
+                    }
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+</div>
+}
+
+<!-- Email OTP Modal -->
+@if (showEmailModal) {
+<div class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Login with Email</h3>
+            <button (click)="closeEmailModal()" class="modal-close">&times;</button>
+        </div>
+
+        <!-- Email Input Step -->
+        @if (!otpSent) {
+        <div class="modal-body">
+            <p class="modal-desc">Enter your Email address to receive an OTP.</p>
+            <div class="phone-input-row" style="padding-left: 0;">
+                <input type="email" [(ngModel)]="emailForOtp" placeholder="Email Address" class="phone-input" style="width: 100%; border-radius: 8px; text-indent: 10px;">
+            </div>
+
+            @if (otpError) {
+            <p class="error-text">{{ otpError }}</p>
+            }
+
+            <button (click)="requestEmailOTP()" [disabled]="!emailForOtp || isSendingOtp"
+                class="whatsapp-btn" style="background-color: #2E7D32;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="whatsapp-icon" width="24" height="24" fill="#ffffff" style="margin-right: 8px;"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                {{ isSendingOtp ? 'Sending...' : 'Send OTP' }}
+            </button>
+        </div>
+        }
+
+        <!-- OTP Input Step -->
+        @if (otpSent) {
+        <div class="modal-body">
+            <div class="otp-header">
+                <p class="modal-desc">Enter the 6-digit code sent to</p>
+                <p class="otp-phone">{{emailForOtp}}</p>
+                <button (click)="resetEmailForm()" class="change-number-btn">Change Email</button>
+            </div>
+
+            <div class="otp-inputs">
+                @for (digit of otp; track i; let i = $index) {
+                <input type="text" maxlength="1" class="otp-input" [value]="digit" (input)="onOtpInput($event, i)"
+                    (keydown)="onOtpKeyDown($event, i)" (paste)="onOtpPaste($event)" #otpInput>
+                }
+            </div>
+
+            @if (otpError) {
+            <p class="error-text text-center">{{ otpError }}</p>
+            }
+
+            <div class="otp-actions">
+                <button (click)="verifyEmailOTP()" [disabled]="!isOtpComplete()" class="verify-btn">
+                    Verify & Proceed
+                </button>
+
+                <div class="resend-row">
+                    @if (resendTimer > 0) {
+                    <p class="resend-timer">Resend OTP in <span>{{resendTimer}}s</span></p>
+                    } @else {
+                    <button (click)="resendEmailOTP()" class="resend-btn">Resend OTP</button>
                     }
                 </div>
             </div>

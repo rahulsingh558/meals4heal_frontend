@@ -63,13 +63,16 @@ export const routes: Routes = [
       import('./pages/checkout/checkout').then(m => m.Checkout),
   },
   {
-    path: 'address-select', component: AddressSelectComponent
+    path: 'address-select', component: AddressSelectComponent,
+    canActivate: [authGuard]
   },
   {
-    path: 'payment', component: PaymentComponent
+    path: 'payment', component: PaymentComponent,
+    canActivate: [authGuard]
   },
   {
-    path: 'order-success', component: OrderSuccessComponent
+    path: 'order-success', component: OrderSuccessComponent,
+    canActivate: [authGuard]
   },
   {
     path: 'orders',

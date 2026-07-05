@@ -1,6 +1,11 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
+    // Guard against SSR where localStorage is not available
+    if (typeof localStorage === 'undefined') {
+        return next(req);
+    }
+
     // Get token from localStorage (try both keys for compatibility)
     const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
 

@@ -8,7 +8,7 @@ import { Addon } from '../../models/addon';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faCartPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { ChatWidgetComponent } from '../../components/chat/chat.component';
-
+import { environment } from '../../../environments/environment';
 /* =========================
    TYPES
 ========================= */
@@ -19,6 +19,7 @@ interface MenuFood extends Food {
   type: FoodType;
   freeAddonIds: number[];
   addons: Addon[];
+  showAllAddons?: boolean;
 }
 
 /* =========================
@@ -55,24 +56,8 @@ export class Menu implements OnInit, OnDestroy {
   private cartSub!: Subscription;
 
   /* =========================
-     ADDON IMAGES
+     ADDON IMAGES (Now fetched dynamically from backend)
   ========================== */
-  addonImages: { [key: string]: string } = {
-    Onion: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200',
-    Tomato: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=200',
-    Cucumber: 'https://images.unsplash.com/photo-1582515081135-73c2c5298ac3?w=200',
-    Lemon: 'https://images.unsplash.com/photo-1541692641319-981cc79ee10a?w=200',
-    Coriander: 'https://images.unsplash.com/photo-1579118468075-5a8b7a9b4f03?w=200',
-    'Sweet Corn': 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=200',
-    Broccoli: 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=200',
-    Beans: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=200',
-    Peas: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=200',
-    Spinach: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=200',
-    Capsicum: 'https://images.unsplash.com/photo-1596284244832-2de51e60d1c2?w=200',
-    Cheese: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=200',
-    Mushroom: 'https://images.unsplash.com/photo-1485579148751-308a1fe6b0b5?w=200',
-    'Bell Pepper': 'https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?w=200',
-  };
 
   constructor(
     private cartService: CartService,
@@ -107,12 +92,16 @@ export class Menu implements OnInit, OnDestroy {
      LOAD MENU (BACKEND)
   ========================== */
   loadMenu() {
+    console.log('Fetching foods...');
     this.foodApi.getAllFoods().subscribe({
       next: foods => {
+        console.log('Received foods from API:', foods.length);
         this.foods = foods.map(f => this.mapApiFoodToMenu(f));
+        console.log('Mapped foods:', this.foods);
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
+        console.error('Failed to load foods:', err);
         this.foods = [];
         this.cdr.detectChanges();
       }
@@ -138,17 +127,14 @@ export class Menu implements OnInit, OnDestroy {
         { id: 6, name: 'Sweet Corn', price: 20 },
         { id: 7, name: 'Broccoli', price: 25 },
         { id: 8, name: 'Beans', price: 15 },
-        { id: 9, name: 'Peas', price: 15 },
-        { id: 10, name: 'Spinach', price: 20 },
-        { id: 15, name: 'Bell Pepper', price: 15 },
+        { id: 9, name: 'Peas', price: 15 }
       ];
     } else {
       premiumAddons = [
         { id: 11, name: 'Capsicum', price: 20 },
         { id: 12, name: 'Broccoli', price: 25 },
         { id: 13, name: 'Cheese', price: 30 },
-        { id: 14, name: 'Mushroom', price: 25 },
-        { id: 16, name: 'Bell Pepper', price: 15 },
+        { id: 14, name: 'Mushroom', price: 25 }
       ];
     }
 
@@ -159,7 +145,7 @@ export class Menu implements OnInit, OnDestroy {
       basePrice: food.basePrice,
       category: food.category as 'sprouts' | 'airfried',
       type: food.type,
-      image: `https://meal-to-heal-backend.onrender.com${food.image}`,
+      image: `${environment.backendUrl}${food.image}`,
       addons: [...freeAddons, ...premiumAddons],
       freeAddonIds: freeAddons.map(a => a.id),
     };
@@ -192,8 +178,27 @@ export class Menu implements OnInit, OnDestroy {
     return this.modalSelectedPremiumAddons.some(a => a.id === id);
   }
 
+  addonImageMap: Record<string, string> = {
+    'Onion': 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=200&q=80',
+    'Tomato': 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=200&q=80',
+    'Cucumber': 'https://images.unsplash.com/photo-1604977042946-1eecc30f269e?w=200&q=80',
+    'Lemon': 'https://images.unsplash.com/photo-1609951651556-5334e2706168?w=200&q=80',
+    'Coriander': 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=200&q=80',
+    'Sweet Corn': 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=200&q=80',
+    'Broccoli': 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=200&q=80',
+    'Beans': 'https://images.unsplash.com/photo-1593467664654-2098b64e03d3?w=200&q=80',
+    'Peas': 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?w=200&q=80',
+    'Capsicum': 'https://images.unsplash.com/photo-1563514227147-6d2ff665a6a0?w=200&q=80',
+    'Cheese': 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=200&q=80',
+    'Mushroom': 'https://images.unsplash.com/photo-1511688878353-3a2f5be94cd7?w=200&q=80'
+  };
+
   getAddonImage(name: string) {
-    return this.addonImages[name];
+    if (this.addonImageMap[name]) {
+      return this.addonImageMap[name];
+    }
+    const fileName = name.toLowerCase().replace(/ /g, '-') + '.jpg';
+    return `${environment.backendUrl}/uploads/addons/${fileName}`;
   }
 
   getPremiumAddonsTotal() {
@@ -224,7 +229,10 @@ export class Menu implements OnInit, OnDestroy {
     if (event) {
       event.stopPropagation();
     }
-    this.cartService.removeItem(String(foodId)).subscribe({
+    // Find the cart item by menuItemId to get the actual cart subdocument _id
+    const cartItem = this.cartItems.find(item => item.menuItemId === String(foodId));
+    const idToRemove = cartItem?._id || String(foodId);
+    this.cartService.removeItem(idToRemove).subscribe({
       next: (res: any) => console.log('Removed from cart', res),
       error: (err: any) => console.error('Error removing from cart', err)
     });
@@ -239,12 +247,18 @@ export class Menu implements OnInit, OnDestroy {
     this.modalSelectedPremiumAddons = [];
     this.calculateTotal();
     this.showAddonModal = true;
+    if (this.isBrowser) {
+      document.body.style.overflow = 'hidden';
+    }
   }
 
   closeAddonPopup() {
     this.showAddonModal = false;
     this.modalSelectedFreeAddons = [];
     this.modalSelectedPremiumAddons = [];
+    if (this.isBrowser) {
+      document.body.style.overflow = '';
+    }
   }
 
   toggleFreeAddon(addon: Addon) {

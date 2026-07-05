@@ -11,8 +11,8 @@ import { FormsModule } from '@angular/forms';
 export class AdminSettingsComponent {
   settings = {
     restaurantName: 'meals4heal',
-    email: 'admin@mealtoheal.com',
-    phone: '+91 9876543210',
+    email: 'admin@meals4heal.in',
+    phone: '+91 8151070458',
     address: '123 Healthy Street, Nutrition City',
     deliveryRadius: 5,
     taxRate: 5,

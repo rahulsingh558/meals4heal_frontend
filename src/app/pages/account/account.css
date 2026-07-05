@@ -350,3 +350,235 @@
         font-size: 0.95rem;
     }
 }
+
+/* ========================= */
+/* Address Management Styles */
+/* ========================= */
+
+.address-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.address-header .section-title {
+    margin: 0;
+}
+
+.btn-add-address {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+}
+
+.btn-add-address:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+}
+
+/* Add Address Form */
+.add-address-form {
+    background: #f0fdf4;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 2px solid #bbf7d0;
+}
+
+.form-subtitle {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #15803d;
+    margin: 0 0 1.25rem 0;
+}
+
+.checkbox-group {
+    margin-top: 0.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #44403c;
+    font-weight: 500;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #16a34a;
+    cursor: pointer;
+}
+
+/* Address List */
+.address-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.empty-addresses {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #78716c;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.empty-addresses p {
+    margin: 0.25rem 0;
+    font-size: 1.05rem;
+}
+
+.empty-hint {
+    font-size: 0.9rem !important;
+    color: #a8a29e;
+}
+
+/* Address Card */
+.address-card {
+    position: relative;
+    background: white;
+    border: 2px solid #e7e5e4;
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+}
+
+.address-card:hover {
+    border-color: #bbf7d0;
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.08);
+}
+
+.address-card-default {
+    border-color: #16a34a;
+    background: linear-gradient(to right, #f0fdf4, white);
+}
+
+.default-badge {
+    position: absolute;
+    top: -1px;
+    right: 12px;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0 0 8px 8px;
+    letter-spacing: 0.3px;
+}
+
+.address-card-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.address-card-info {
+    flex: 1;
+}
+
+.address-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #292524;
+    margin: 0 0 0.25rem 0;
+}
+
+.address-phone {
+    font-size: 0.9rem;
+    color: #57534e;
+    margin: 0 0 0.5rem 0;
+}
+
+.address-line {
+    font-size: 0.9rem;
+    color: #44403c;
+    margin: 0.15rem 0;
+    line-height: 1.4;
+}
+
+.address-landmark {
+    font-size: 0.85rem;
+    color: #78716c;
+    margin: 0.35rem 0 0 0;
+    font-style: italic;
+}
+
+.address-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.btn-address-action {
+    border: none;
+    padding: 0.4rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-set-default {
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1.5px solid #bbf7d0;
+}
+
+.btn-set-default:hover {
+    background: #dcfce7;
+    border-color: #16a34a;
+}
+
+.btn-delete {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1.5px solid #fecaca;
+}
+
+.btn-delete:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+}
+
+/* Responsive for Address Cards */
+@media (max-width: 768px) {
+    .address-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .address-card-content {
+        flex-direction: column;
+    }
+
+    .address-card-actions {
+        flex-direction: row;
+        width: 100%;
+    }
+
+    .btn-address-action {
+        flex: 1;
+        text-align: center;
+    }
+}

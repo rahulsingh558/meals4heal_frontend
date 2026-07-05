@@ -53,51 +53,6 @@
           placeholder="Enter your phone number" />
       </div>
 
-      <!-- Address Section -->
-      <div class="address-section">
-        <h4 class="section-title">Address</h4>
-
-        <div class="form-group">
-          <label class="form-label">Address Line 1</label>
-          <input type="text" [(ngModel)]="formData.address.addressLine1" name="addressLine1" class="form-input"
-            [readonly]="!isEditing" placeholder="Street address, apartment" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Address Line 2</label>
-          <input type="text" [(ngModel)]="formData.address.addressLine2" name="addressLine2" class="form-input"
-            [readonly]="!isEditing" placeholder="Building, floor (optional)" />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">City</label>
-            <input type="text" [(ngModel)]="formData.address.city" name="city" class="form-input"
-              [readonly]="!isEditing" placeholder="City" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">State</label>
-            <input type="text" [(ngModel)]="formData.address.state" name="state" class="form-input"
-              [readonly]="!isEditing" placeholder="State" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Pincode</label>
-            <input type="text" [(ngModel)]="formData.address.pincode" name="pincode" class="form-input"
-              [readonly]="!isEditing" placeholder="Pincode" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Landmark</label>
-            <input type="text" [(ngModel)]="formData.address.landmark" name="landmark" class="form-input"
-              [readonly]="!isEditing" placeholder="Landmark (optional)" />
-          </div>
-        </div>
-      </div>
-
       <!-- Action Buttons -->
       <div class="button-group">
         <!-- Edit Button (shown when not editing) -->
@@ -118,6 +73,145 @@
       </div>
     </form>
 
+  </div>
+
+  <!-- Saved Addresses Section -->
+  <div *ngIf="!isLoading && isAuthenticated" class="account-card mt-8">
+    <div class="address-header">
+      <h3 class="section-title">Saved Addresses</h3>
+      <button type="button" (click)="toggleAddressForm()" class="btn-add-address">
+        <span *ngIf="!showAddressForm">+ Add New Address</span>
+        <span *ngIf="showAddressForm">✕ Cancel</span>
+      </button>
+    </div>
+
+    <!-- Address Messages -->
+    <div *ngIf="addressMessage" class="alert alert-success">
+      {{ addressMessage }}
+    </div>
+    <div *ngIf="addressError" class="alert alert-error">
+      {{ addressError }}
+    </div>
+
+    <!-- Add New Address Form -->
+    <div *ngIf="showAddressForm" class="add-address-form animate-fade-in-up">
+      <h4 class="form-subtitle">Add New Address</h4>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" [(ngModel)]="newAddress.name" name="newAddrName" class="form-input"
+            placeholder="Recipient name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone *</label>
+          <input type="tel" [(ngModel)]="newAddress.phone" name="newAddrPhone" class="form-input"
+            placeholder="Phone number" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Address Line 1 *</label>
+        <input type="text" [(ngModel)]="newAddress.addressLine1" name="newAddrLine1" class="form-input"
+          placeholder="Street address, apartment" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Address Line 2</label>
+        <input type="text" [(ngModel)]="newAddress.addressLine2" name="newAddrLine2" class="form-input"
+          placeholder="Building, floor (optional)" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">City *</label>
+          <input type="text" [(ngModel)]="newAddress.city" name="newAddrCity" class="form-input"
+            placeholder="City" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">State *</label>
+          <input type="text" [(ngModel)]="newAddress.state" name="newAddrState" class="form-input"
+            placeholder="State" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Pincode *</label>
+          <input type="text" [(ngModel)]="newAddress.pincode" name="newAddrPincode" class="form-input"
+            placeholder="Pincode" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Landmark</label>
+          <input type="text" [(ngModel)]="newAddress.landmark" name="newAddrLandmark" class="form-input"
+            placeholder="Landmark (optional)" />
+        </div>
+      </div>
+
+      <div class="form-group checkbox-group">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="newAddress.isDefault" name="newAddrDefault" />
+          <span>Set as default address</span>
+        </label>
+      </div>
+
+      <div class="button-group">
+        <button type="button" (click)="addAddress()" class="btn btn-success" [disabled]="isAddressSaving">
+          {{ isAddressSaving ? 'Saving...' : 'Save Address' }}
+        </button>
+        <button type="button" (click)="toggleAddressForm()" class="btn btn-secondary" [disabled]="isAddressSaving">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- Address List -->
+    <div *ngIf="!showAddressForm" class="address-list">
+      <!-- Empty State -->
+      <div *ngIf="addresses.length === 0" class="empty-addresses">
+        <div class="empty-icon">📍</div>
+        <p>No saved addresses yet</p>
+        <p class="empty-hint">Add an address to get started with faster checkout</p>
+      </div>
+
+      <!-- Address Cards -->
+      <div *ngFor="let address of addresses; let i = index"
+           class="address-card"
+           [class.address-card-default]="address.isDefault">
+
+        <!-- Default Badge -->
+        <div *ngIf="address.isDefault" class="default-badge">
+          ✓ Default
+        </div>
+
+        <div class="address-card-content">
+          <div class="address-card-info">
+            <h4 class="address-name">{{ address.name }}</h4>
+            <p class="address-phone">📞 {{ address.phone }}</p>
+            <p class="address-line">{{ address.addressLine1 }}</p>
+            <p *ngIf="address.addressLine2" class="address-line">{{ address.addressLine2 }}</p>
+            <p class="address-line">{{ address.city }}, {{ address.state }} - {{ address.pincode }}</p>
+            <p *ngIf="address.landmark" class="address-landmark">📍 {{ address.landmark }}</p>
+          </div>
+
+          <div class="address-card-actions">
+            <button *ngIf="!address.isDefault"
+                    type="button"
+                    (click)="setDefaultAddress(i)"
+                    class="btn-address-action btn-set-default"
+                    title="Set as default">
+              Set Default
+            </button>
+            <button type="button"
+                    (click)="deleteAddress(i)"
+                    class="btn-address-action btn-delete"
+                    title="Delete address">
+              🗑 Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Password Change Section -->

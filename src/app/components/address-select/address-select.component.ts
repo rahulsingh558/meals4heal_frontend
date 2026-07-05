@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -29,6 +29,7 @@ export class AddressSelectComponent implements OnInit {
     private cartService: CartService,
     private router: Router,
     private fb: FormBuilder,
+    private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
@@ -65,6 +66,9 @@ export class AddressSelectComponent implements OnInit {
           this.addressService.setSelectedAddress(defaultIndex);
         }
       }
+
+      // Force UI refresh after async address load
+      this.cdr.detectChanges();
     });
 
     // Get cart total

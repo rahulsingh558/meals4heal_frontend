@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, of } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
-
+import { environment } from '../../environments/environment';
 interface LoginResponse {
   token: string;
   user: {
@@ -20,7 +20,7 @@ interface LoginResponse {
 export class AdminAuthService {
   private readonly TOKEN_KEY = 'admin_token';
   private readonly USER_KEY = 'admin_user';
-  private readonly API_URL = 'https://meal-to-heal-backend.onrender.com/api/auth';
+  private readonly API_URL = `${environment.apiUrl}/auth`;
   private isBrowser: boolean;
 
   constructor(

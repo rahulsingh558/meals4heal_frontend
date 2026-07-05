@@ -9,8 +9,8 @@ import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { isPlatformBrowser } from '@angular/common';
 import { CartService } from '../../services/cart.service';
-import { ProductsCarouselComponent } from '../../components/products-carousel/products-carousel.component';
 import { ChatWidgetComponent } from '../../components/chat/chat.component';
+import { environment } from '../../../environments/environment';
 
 @Component({
   standalone: true,
@@ -53,10 +53,10 @@ interface Testimonial {
 @Component({
   standalone: true,
   templateUrl: './home.html',
+  styleUrls: ['./home.css'],
   imports: [
     RouterLink,
-    CommonModule,
-    ProductsCarouselComponent  // Add this
+    CommonModule
   ],
 })
 
@@ -75,39 +75,39 @@ export class Home implements AfterViewInit {
   bowls: BowlType[] = [
     {
       type: 'sprouts',
-      title: 'Fresh Sprouts Power Bowl',
-      description: 'Protein-packed moong sprouts with fresh vegetables and lemon dressing. Perfect for weight management and digestion.',
+      title: 'Moong Sprouts Bowl',
+      description: 'Fresh moong beans packed with protein, vitamins, and refreshing crunch.',
       calories: '320 cal',
-      ingredients: ['Moong Sprouts', 'Cucumber', 'Tomato', 'Bell Pepper', 'Onion', 'Lemon Dressing'],
-      image: 'https://images.unsplash.com/photo-1540420828642-fca2c5c18abe?w=800&h=800&fit=crop&crop=center',
-      basePrice: 99
+      ingredients: ['Moong', 'Cucumber', 'Tomato', 'Corn', 'Lemon Dressing'],
+      image: `${environment.backendUrl}/uploads/seed/Moong%20bowl.png`,
+      basePrice: 80
     },
     {
       type: 'egg',
-      title: 'Egg Protein Bowl',
-      description: 'Boiled eggs with quinoa, avocado, and roasted vegetables. High protein meal for muscle recovery.',
-      calories: '420 cal',
-      ingredients: ['Boiled Eggs', 'Quinoa', 'Avocado', 'Spinach', 'Cherry Tomatoes', 'Herb Dressing'],
-      image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=800&fit=crop&crop=center',
-      basePrice: 129
+      title: 'Boiled Eggs',
+      description: 'Healthy boiled eggs paired with a seasoned mix of crunchy, fresh vegetables.',
+      calories: '320 cal',
+      ingredients: ['Egg', 'Onion', 'Capsicum', 'Corn', 'Tomato', 'Lemon Dressing'],
+      image: `${environment.backendUrl}/uploads/seed/egg%20bowl.png`,
+      basePrice: 110
     },
     {
       type: 'paneer',
-      title: 'Air Fried Paneer Bowl',
-      description: 'Crispy air-fried paneer with sweet corn mix. 95% less oil than traditional frying.',
-      calories: '380 cal',
-      ingredients: ['Air Fried Paneer', 'Sweet Corn', 'Capsicum', 'Onion', 'Mexican Seasoning', 'Yogurt Dip'],
-      image: 'https://images.unsplash.com/photo-1603064752734-4c48eff53d05?w=800&h=800&fit=crop&crop=center',
-      basePrice: 149
+      title: 'Air Fried Paneer',
+      description: 'Delicious air-fried paneer cubes tossed with perfectly roasted capsicum and crunchy onions.',
+      calories: '430 cal',
+      ingredients: ['Paneer', 'Capsicum', 'Tomato', 'Corn', 'Tomato', 'Lemon Dressing'],
+      image: `${environment.backendUrl}/uploads/seed/Air%20friedPaneer.png`,
+      basePrice: 170
     },
     {
       type: 'chicken',
-      title: 'Grilled Chicken Protein Bowl',
-      description: 'Grilled chicken breast with broccoli and roasted vegetables. Perfect post-workout meal.',
-      calories: '450 cal',
-      ingredients: ['Grilled Chicken', 'Broccoli', 'Bell Pepper', 'Sweet Potato', 'Brown Rice', 'Herb Sauce'],
-      image: 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=800&h=800&fit=crop&crop=center',
-      basePrice: 169
+      title: 'Air Fried Chicken',
+      description: 'Crispy, guilt-free air-fried chicken breast tenderly cooked with minimal oil.',
+      calories: '480 cal',
+      ingredients: ['Chicken Breast', 'Capsicum', 'Onion', 'Lemon Dressing'],
+      image: `${environment.backendUrl}/uploads/seed/Airfried%20chicken.png`,
+      basePrice: 180
     }
   ];
 
@@ -214,10 +214,14 @@ export class Home implements AfterViewInit {
     setTimeout(() => this.isBowlAnimating.set(false), 600);
   }
 
+  get isMobileView(): boolean {
+    return this.isBrowser ? window.innerWidth < 640 : false;
+  }
+
   getIngredientPosition(index: number): any {
     const total = this.activeBowl.ingredients.length;
     const angle = (index * 360 / total) * (Math.PI / 180);
-    const radius = 120;
+    const radius = this.isMobileView ? 115 : 200;
 
     return {
       left: `calc(50% + ${Math.cos(angle) * radius}px)`,

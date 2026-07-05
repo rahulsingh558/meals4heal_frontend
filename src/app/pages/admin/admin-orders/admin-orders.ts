@@ -1,49 +1,14 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
-import { AdminAuthService } from '../../../services/admin-auth.service';
-import { AdminSidebarComponent } from '../sidebar/admin-sidebar.component';
-
-interface OrderItem {
-  name: string;
-  quantity: number;
-  price: number;
-  addons: string[];
-  specialInstructions?: string;
-}
-
-interface Order {
-  id: string;
-  orderNumber: number;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  deliveryAddress: string;
-  items: OrderItem[];
-  subtotal: number;
-  deliveryCharge: number;
-  tax: number;
-  totalAmount: number;
-  status: string;
-  paymentMethod: string;
-  paymentStatus: string;
-  date: Date;
-  time: string;
-  notes?: string;
-}
+import { OrderService, Order } from '../../../services/order.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AdminSidebarComponent], // Add AdminSidebarComponent here
+  imports: [CommonModule, FormsModule],
   templateUrl: './admin-orders.html',
 })
-export class AdminOrdersComponent implements OnInit {
-  /* =========================
-     SIDEBAR STATE
-  ========================== */
-  isSidebarOpen = false;
-
+export class AdminOrdersComponent implements OnInit, OnDestroy {
   /* =========================
      FILTER STATE
   ========================== */
@@ -57,18 +22,19 @@ export class AdminOrdersComponent implements OnInit {
   /* =========================
      PAGINATION
   ========================== */
-  pageSize = 8;
-  displayedOrders: Order[] = [];
-  filteredOrders: Order[] = [];
-  loadMoreCount = 0;
+  pageSize = 10;
+  currentPage = 0;
 
   /* =========================
-     ORDERS DATA
+     DATA
   ========================== */
   allOrders: Order[] = [];
-  activeOrders: Order[] = [];
-  recentOrders: Order[] = [];
+  filteredOrders: Order[] = [];
+  displayedOrders: Order[] = [];
   selectedOrder: Order | null = null;
+  loading = true;
+  error = '';
+  updatingId: string | null = null;
 
   /* =========================
      STATS
@@ -78,112 +44,130 @@ export class AdminOrdersComponent implements OnInit {
   todaysOrders = 0;
   totalRevenue = 0;
 
-  constructor(private auth: AdminAuthService) {}
+  private refreshTimer: any;
+  isBrowser = false;
+
+  constructor(
+    private orderService: OrderService,
+    private cdr: ChangeDetectorRef,
+    @Inject(PLATFORM_ID) platformId: Object
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
 
   ngOnInit() {
-    // Initialize with sample data
-    this.generateSampleOrders();
-    this.calculateStats();
-    this.applyFilters();
-    
+    this.loadOrders();
     // Auto-refresh every 30 seconds
-    setInterval(() => {
-      this.refreshOrders();
-    }, 30000);
-    
-    // On desktop, sidebar is open by default
-    this.isSidebarOpen = window.innerWidth >= 1024;
+    this.refreshTimer = setInterval(() => this.loadOrders(), 30000);
+  }
+
+  ngOnDestroy() {
+    clearInterval(this.refreshTimer);
   }
 
   /* =========================
-     SIDEBAR METHODS
+     DATA LOADING
   ========================== */
-  toggleSidebar() {
-    this.isSidebarOpen = !this.isSidebarOpen;
+  loadOrders() {
+    this.loading = true;
+    this.orderService.getAllOrders({ limit: 200, sortBy: '-createdAt' }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.allOrders = res.orders;
+          this.calculateStats();
+          this.applyFilters();
+        }
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to load orders:', err);
+        this.error = 'Failed to load orders.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  refreshOrders() {
+    this.loadOrders();
   }
 
   /* =========================
-     FILTER METHODS
+     STATS
   ========================== */
-  toggleFilter() {
-    this.showFilter = !this.showFilter;
+  calculateStats() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    this.totalOrders = this.allOrders.length;
+    this.pendingOrders = this.allOrders.filter(o =>
+      ['pending', 'confirmed', 'preparing'].includes(o.orderStatus)
+    ).length;
+    this.todaysOrders = this.allOrders.filter(o => {
+      const d = new Date(o.createdAt as any);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === today.getTime();
+    }).length;
+    this.totalRevenue = this.allOrders
+      .filter(o => o.orderStatus === 'delivered')
+      .reduce((sum, o) => sum + o.totalAmount, 0);
   }
 
-  onSearch() {
-    this.applyFilters();
-  }
+  /* =========================
+     FILTERS
+  ========================== */
+  toggleFilter() { this.showFilter = !this.showFilter; }
+  onSearch() { this.applyFilters(); }
 
   applyFilters() {
     let filtered = [...this.allOrders];
 
-    // Apply search filter
     if (this.searchQuery) {
-      const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(order =>
-        order.id.toLowerCase().includes(query) ||
-        order.customerName.toLowerCase().includes(query) ||
-        order.customerPhone.includes(query) ||
-        order.customerEmail.toLowerCase().includes(query)
+      const q = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(o =>
+        String(o.orderNumber).includes(q) ||
+        o.customerName.toLowerCase().includes(q) ||
+        o.customerPhone.includes(q) ||
+        o.customerEmail.toLowerCase().includes(q)
       );
     }
 
-    // Apply status filter
     if (this.statusFilter) {
-      filtered = filtered.filter(order => order.status === this.statusFilter);
+      filtered = filtered.filter(o => o.orderStatus === this.statusFilter);
     }
 
-    // Apply date filter
     if (this.dateFilter) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      filtered = filtered.filter(order => {
-        const orderDate = new Date(order.date);
-        orderDate.setHours(0, 0, 0, 0);
-
-        switch (this.dateFilter) {
-          case 'today':
-            return orderDate.getTime() === today.getTime();
-          case 'week':
-            const weekAgo = new Date(today);
-            weekAgo.setDate(today.getDate() - 7);
-            return orderDate >= weekAgo;
-          case 'month':
-            const monthAgo = new Date(today);
-            monthAgo.setMonth(today.getMonth() - 1);
-            return orderDate >= monthAgo;
-          default:
-            return true;
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(o => {
+        const d = new Date(o.createdAt as any); d.setHours(0, 0, 0, 0);
+        if (this.dateFilter === 'today') return d.getTime() === today.getTime();
+        if (this.dateFilter === 'week') {
+          const w = new Date(today); w.setDate(today.getDate() - 7);
+          return d >= w;
         }
+        if (this.dateFilter === 'month') {
+          const m = new Date(today); m.setMonth(today.getMonth() - 1);
+          return d >= m;
+        }
+        return true;
       });
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
-      const dateA = new Date(a.date + 'T' + a.time);
-      const dateB = new Date(b.date + 'T' + b.time);
-
-      switch (this.sortBy) {
-        case 'newest':
-          return dateB.getTime() - dateA.getTime();
-        case 'oldest':
-          return dateA.getTime() - dateB.getTime();
-        case 'amount-high':
-          return b.totalAmount - a.totalAmount;
-        case 'amount-low':
-          return a.totalAmount - b.totalAmount;
-        default:
-          return dateB.getTime() - dateA.getTime();
-      }
+      const dA = new Date(a.createdAt as any).getTime();
+      const dB = new Date(b.createdAt as any).getTime();
+      if (this.sortBy === 'oldest') return dA - dB;
+      if (this.sortBy === 'amount-high') return b.totalAmount - a.totalAmount;
+      if (this.sortBy === 'amount-low') return a.totalAmount - b.totalAmount;
+      return dB - dA; // newest
     });
 
     this.filteredOrders = filtered;
+    this.currentPage = 0;
     this.displayedOrders = filtered.slice(0, this.pageSize);
-    this.loadMoreCount = Math.max(0, filtered.length - this.displayedOrders.length);
-    
-    // Update active filters count
-    this.activeFilters = [this.searchQuery, this.statusFilter, this.dateFilter]
-      .filter(Boolean).length;
+
+    this.activeFilters = [this.searchQuery, this.statusFilter, this.dateFilter].filter(Boolean).length;
   }
 
   clearFilters() {
@@ -194,200 +178,137 @@ export class AdminOrdersComponent implements OnInit {
     this.applyFilters();
   }
 
-  /* =========================
-     PAGINATION METHODS
-  ========================== */
+  get hasMore(): boolean {
+    return this.displayedOrders.length < this.filteredOrders.length;
+  }
+
+  get loadMoreCount(): number {
+    return this.filteredOrders.length - this.displayedOrders.length;
+  }
+
   loadMoreOrders() {
-    const currentLength = this.displayedOrders.length;
-    const newLength = Math.min(currentLength + 10, this.filteredOrders.length);
-    this.displayedOrders = this.filteredOrders.slice(0, newLength);
-    this.loadMoreCount = Math.max(0, this.filteredOrders.length - newLength);
+    const next = this.displayedOrders.length + this.pageSize;
+    this.displayedOrders = this.filteredOrders.slice(0, next);
   }
 
   /* =========================
-     ORDER METHODS
+     ORDER ACTIONS
   ========================== */
-  refreshOrders() {
-    // In a real app, this would fetch from API
-    this.calculateStats();
-    this.applyFilters();
-  }
-
   viewOrderDetails(order: Order) {
     this.selectedOrder = order;
   }
 
+  closeModal() {
+    this.selectedOrder = null;
+  }
+
   updateOrderStatus(order: Order) {
-    const statusOptions = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
-    const currentIndex = statusOptions.indexOf(order.status);
-    const nextIndex = (currentIndex + 1) % (statusOptions.length - 1); // Skip cancelled
-    
-    order.status = statusOptions[nextIndex];
-    
-    // Update stats and filters
-    this.calculateStats();
-    this.applyFilters();
-    
-    // Show confirmation
-    alert(`Order ${order.id} status updated to ${this.getStatusText(order.status)}`);
-  }
-
-  cancelOrder(order: Order) {
-    if (confirm(`Are you sure you want to cancel order ${order.id}?`)) {
-      order.status = 'cancelled';
-      this.calculateStats();
-      this.applyFilters();
-      alert(`Order ${order.id} has been cancelled.`);
+    const flow = ['pending', 'confirmed', 'preparing', 'out_for_delivery', 'delivered'];
+    const idx = flow.indexOf(order.orderStatus);
+    if (idx === -1 || idx === flow.length - 1) {
+      alert('Order is already at the final status or cannot be advanced.');
+      return;
     }
-  }
+    const nextStatus = flow[idx + 1];
+    if (!confirm(`Advance order #${order.orderNumber} to "${this.getStatusText(nextStatus)}"?`)) return;
 
-  exportOrders() {
-    // In a real app, this would generate and download CSV/Excel
-    alert('Export feature will be implemented soon!');
-  }
-
-  printOrder(order: Order) {
-    window.print();
-  }
-
-  /* =========================
-     HELPER METHODS
-  ========================== */
-  getStatusText(status: string): string {
-    const statusMap: { [key: string]: string } = {
-      'pending': 'Pending',
-      'confirmed': 'Confirmed',
-      'preparing': 'Preparing',
-      'ready': 'Ready for Pickup',
-      'delivered': 'Delivered',
-      'cancelled': 'Cancelled'
-    };
-    return statusMap[status] || status;
-  }
-
-  formatDate(date: Date): string {
-    return new Date(date).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
+    this.updatingId = order._id || null;
+    this.orderService.updateOrderStatus(order._id!, nextStatus).subscribe({
+      next: (res) => {
+        if (res.success) {
+          order.orderStatus = nextStatus;
+          this.calculateStats();
+          this.applyFilters();
+        }
+        this.updatingId = null;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Status update failed:', err);
+        alert('Failed to update order status');
+        this.updatingId = null;
+        this.cdr.detectChanges();
+      }
     });
   }
 
-  formatTime(time: string): string {
-    return time;
-  }
-
-  // Helper method to get item names as string
-  getItemNames(items: OrderItem[]): string {
-    return items.map(item => item.name).join(', ');
-  }
-
-  calculateStats() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    this.totalOrders = this.allOrders.length;
-    this.pendingOrders = this.allOrders.filter(o => 
-      ['pending', 'confirmed', 'preparing'].includes(o.status)
-    ).length;
-    this.todaysOrders = this.allOrders.filter(o => {
-      const orderDate = new Date(o.date);
-      orderDate.setHours(0, 0, 0, 0);
-      return orderDate.getTime() === today.getTime();
-    }).length;
-    this.totalRevenue = this.allOrders
-      .filter(o => o.status === 'delivered')
-      .reduce((sum, order) => sum + order.totalAmount, 0);
-
-    // Update active and recent orders
-    this.activeOrders = this.allOrders
-      .filter(o => ['pending', 'confirmed', 'preparing', 'ready'].includes(o.status))
-      .sort((a, b) => new Date(b.date + 'T' + b.time).getTime() - new Date(a.date + 'T' + a.time).getTime())
-      .slice(0, 5);
-
-    this.recentOrders = this.allOrders
-      .filter(o => ['delivered', 'cancelled'].includes(o.status))
-      .sort((a, b) => new Date(b.date + 'T' + b.time).getTime() - new Date(a.date + 'T' + a.time).getTime())
-      .slice(0, 5);
+  cancelOrder(order: Order) {
+    if (!confirm(`Cancel order #${order.orderNumber}?`)) return;
+    this.updatingId = order._id || null;
+    this.orderService.updateOrderStatus(order._id!, 'cancelled').subscribe({
+      next: (res) => {
+        if (res.success) {
+          order.orderStatus = 'cancelled';
+          this.calculateStats();
+          this.applyFilters();
+        }
+        this.updatingId = null;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        alert('Failed to cancel order');
+        this.updatingId = null;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   /* =========================
-     SAMPLE DATA GENERATION
+     HELPERS
   ========================== */
-  generateSampleOrders() {
-    const menuItems = [
-      { name: 'Moong Sprouts Bowl', price: 80 },
-      { name: 'Egg Meal Bowl', price: 120 },
-      { name: 'Paneer Sprouts Bowl', price: 110 },
-      { name: 'Chicken Bowl', price: 140 },
-      { name: 'Sprouts Salad', price: 70 },
-      { name: 'Protein Shake', price: 90 }
-    ];
-
-    const addons = ['Extra Cheese', 'Avocado', 'Olives', 'Nuts', 'Extra Dressing'];
-    const customers = ['Rahul Sharma', 'Priya Patel', 'Amit Kumar', 'Sneha Singh', 'Vikas Gupta', 'Neha Reddy'];
-    const addresses = ['123 MG Road, Bangalore', '456 Koramangala, Bangalore', '789 Indiranagar, Bangalore'];
-
-    for (let i = 1; i <= 50; i++) {
-      const itemCount = Math.floor(Math.random() * 3) + 1;
-      const items: OrderItem[] = [];
-      let subtotal = 0;
-
-      for (let j = 0; j < itemCount; j++) {
-        const menuItem = menuItems[Math.floor(Math.random() * menuItems.length)];
-        const quantity = Math.floor(Math.random() * 2) + 1;
-        const itemAddons = Math.random() > 0.5 
-          ? [addons[Math.floor(Math.random() * addons.length)]]
-          : [];
-
-        items.push({
-          name: menuItem.name,
-          quantity,
-          price: menuItem.price,
-          addons: itemAddons,
-          specialInstructions: Math.random() > 0.7 ? 'No onions please' : undefined
-        });
-
-        subtotal += menuItem.price * quantity;
-      }
-
-      const deliveryCharge = 30;
-      const tax = Math.round(subtotal * 0.05);
-      const totalAmount = subtotal + deliveryCharge + tax;
-
-      const statuses = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-
-      const date = new Date();
-      date.setDate(date.getDate() - Math.floor(Math.random() * 30));
-
-      const hours = Math.floor(Math.random() * 12) + 8;
-      const minutes = Math.floor(Math.random() * 60);
-      const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-
-      this.allOrders.push({
-        id: `ORD-${1000 + i}`,
-        orderNumber: 1000 + i,
-        customerName: customers[Math.floor(Math.random() * customers.length)],
-        customerPhone: `+91 ${Math.floor(Math.random() * 9000000000) + 1000000000}`,
-        customerEmail: `customer${i}@email.com`,
-        deliveryAddress: addresses[Math.floor(Math.random() * addresses.length)],
-        items,
-        subtotal,
-        deliveryCharge,
-        tax,
-        totalAmount,
-        status,
-        paymentMethod: Math.random() > 0.5 ? 'Online Payment' : 'Cash on Delivery',
-        paymentStatus: status === 'cancelled' ? 'Refunded' : 'Paid',
-        date,
-        time,
-        notes: Math.random() > 0.8 ? 'Call before delivery' : undefined
-      });
-    }
+  getStatusText(status: string): string {
+    const map: Record<string, string> = {
+      pending: 'Pending',
+      confirmed: 'Confirmed',
+      preparing: 'Preparing',
+      out_for_delivery: 'Out for Delivery',
+      delivered: 'Delivered',
+      cancelled: 'Cancelled'
+    };
+    return map[status] || status;
   }
 
-  logout() {
-    this.auth.logout();
+  getStatusClasses(status: string): string {
+    const map: Record<string, string> = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      confirmed: 'bg-blue-100 text-blue-800',
+      preparing: 'bg-purple-100 text-purple-800',
+      out_for_delivery: 'bg-indigo-100 text-indigo-800',
+      delivered: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800'
+    };
+    return map[status] || 'bg-gray-100 text-gray-800';
+  }
+
+  formatDate(date: any): string {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+  }
+
+  formatTime(date: any): string {
+    if (!date) return '';
+    return new Date(date).toLocaleTimeString('en-IN', {
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  getItemNames(items: any[]): string {
+    return items.map(i => i.name).join(', ');
+  }
+
+  getDeliveryAddressStr(addr: any): string {
+    if (!addr) return '—';
+    return [addr.street, addr.city, addr.state, addr.zipCode, addr.landmark]
+      .filter(Boolean).join(', ');
+  }
+
+  canAdvance(order: Order): boolean {
+    return !['delivered', 'cancelled'].includes(order.orderStatus);
+  }
+
+  canCancel(order: Order): boolean {
+    return ['pending', 'confirmed'].includes(order.orderStatus);
   }
 }

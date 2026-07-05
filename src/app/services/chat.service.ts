@@ -18,22 +18,22 @@ export class ChatService {
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
     this.isBrowser = isPlatformBrowser(this.platformId);
-    
+
     // Initialize with sample data
     let initialSessions: ChatSession[] = [];
     let initialAdmins: AdminUser[] = [];
-    
+
     if (this.isBrowser) {
       const savedSessions = localStorage.getItem(this.sessionsStorageKey);
       const savedAdmins = localStorage.getItem(this.adminKey);
-      
+
       initialSessions = savedSessions ? JSON.parse(savedSessions) : this.getSampleSessions();
       initialAdmins = savedAdmins ? JSON.parse(savedAdmins) : this.getSampleAdmins();
     } else {
       initialSessions = this.getSampleSessions();
       initialAdmins = this.getSampleAdmins();
     }
-    
+
     this.sessionsSubject = new BehaviorSubject<ChatSession[]>(initialSessions);
     this.adminUsersSubject = new BehaviorSubject<AdminUser[]>(initialAdmins);
     this.isChatOpenSubject = new BehaviorSubject<boolean>(false);
@@ -60,35 +60,35 @@ export class ChatService {
   // Get messages for current user
   getUserMessages(userId: string): ChatMessage[] {
     if (!this.isBrowser) return [];
-    
+
     const key = this.userMessagesKey + userId;
     const savedMessages = localStorage.getItem(key);
     return savedMessages ? JSON.parse(savedMessages) : [];
   }
 
   // Add this method to chat.service.ts
-syncUserMessages(userId: string): void {
-  if (!this.isBrowser) return;
-  
-  const key = this.userMessagesKey + userId;
-  const savedMessages = localStorage.getItem(key);
-  
-  if (savedMessages) {
-    const messages: ChatMessage[] = JSON.parse(savedMessages);
-    
-    // Make sure each message has the correct sender
-    const updatedMessages = messages.map(msg => {
-      // If message has userId and sender is not set, set it to 'user'
-      if (msg.userId && !msg.sender) {
-        return { ...msg, sender: 'user' as const };
-      }
-      return msg;
-    });
-    
-    // Save back
-    localStorage.setItem(key, JSON.stringify(updatedMessages));
+  syncUserMessages(userId: string): void {
+    if (!this.isBrowser) return;
+
+    const key = this.userMessagesKey + userId;
+    const savedMessages = localStorage.getItem(key);
+
+    if (savedMessages) {
+      const messages: ChatMessage[] = JSON.parse(savedMessages);
+
+      // Make sure each message has the correct sender
+      const updatedMessages = messages.map(msg => {
+        // If message has userId and sender is not set, set it to 'user'
+        if (msg.userId && !msg.sender) {
+          return { ...msg, sender: 'user' as const };
+        }
+        return msg;
+      });
+
+      // Save back
+      localStorage.setItem(key, JSON.stringify(updatedMessages));
+    }
   }
-}
 
   // Send message from user
   sendUserMessage(content: string, userName?: string): void {
@@ -115,52 +115,52 @@ syncUserMessages(userId: string): void {
     this.updateUserSession(userId, userName || 'User', newMessage, sessionId);
   }
 
-// In chat.service.ts, update the sendAdminMessage method:
+  // In chat.service.ts, update the sendAdminMessage method:
 
-// Send message from admin to specific session
-sendAdminMessage(content: string, sessionId: string): void {
-  const sessions = this.getSessions();
-  const session = sessions.find(s => s.id === sessionId);
-  
-  if (!session) return;
+  // Send message from admin to specific session
+  sendAdminMessage(content: string, sessionId: string): void {
+    const sessions = this.getSessions();
+    const session = sessions.find(s => s.id === sessionId);
 
-  const newMessage: ChatMessage = {
-    id: Date.now(),
-    sessionId: sessionId,
-    sender: 'admin', // Make sure this is 'admin' not 'user'
-    content,
-    timestamp: new Date(),
-    isRead: true,
-    userId: session.userId, // Add userId to link to user
-    userName: session.userName // Add userName
-  };
+    if (!session) return;
 
-  // Update session
-  const updatedSession: ChatSession = {
-    ...session,
-    messages: [...session.messages, newMessage],
-    lastActive: new Date()
-  };
+    const newMessage: ChatMessage = {
+      id: Date.now(),
+      sessionId: sessionId,
+      sender: 'admin', // Make sure this is 'admin' not 'user'
+      content,
+      timestamp: new Date(),
+      isRead: true,
+      userId: session.userId, // Add userId to link to user
+      userName: session.userName // Add userName
+    };
 
-  const updatedSessions = sessions.map(s => 
-    s.id === sessionId ? updatedSession : s
-  );
-  
-  this.updateSessions(updatedSessions);
+    // Update session
+    const updatedSession: ChatSession = {
+      ...session,
+      messages: [...session.messages, newMessage],
+      lastActive: new Date()
+    };
 
-  // Also save to user's messages - THIS IS CRITICAL
-  const userId = session.userId;
-  const userMessages = this.getUserMessages(userId);
-  
-  // Make sure the message has sender: 'admin'
-  const userAdminMessage: ChatMessage = {
-    ...newMessage,
-    sender: 'admin' // Explicitly set to admin
-  };
-  
-  const updatedUserMessages = [...userMessages, userAdminMessage];
-  this.saveUserMessages(userId, updatedUserMessages);
-}
+    const updatedSessions = sessions.map(s =>
+      s.id === sessionId ? updatedSession : s
+    );
+
+    this.updateSessions(updatedSessions);
+
+    // Also save to user's messages - THIS IS CRITICAL
+    const userId = session.userId;
+    const userMessages = this.getUserMessages(userId);
+
+    // Make sure the message has sender: 'admin'
+    const userAdminMessage: ChatMessage = {
+      ...newMessage,
+      sender: 'admin' // Explicitly set to admin
+    };
+
+    const updatedUserMessages = [...userMessages, userAdminMessage];
+    this.saveUserMessages(userId, updatedUserMessages);
+  }
 
   // Send quick reply from user
   sendQuickReply(text: string): void {
@@ -188,14 +188,14 @@ sendAdminMessage(content: string, sessionId: string): void {
     const sessions = this.getSessions();
     const updatedSessions = sessions.map(session => {
       if (session.id === sessionId) {
-        return { 
-          ...session, 
+        return {
+          ...session,
           status: 'resolved' as const
         };
       }
       return session;
     });
-    
+
     this.updateSessions(updatedSessions);
   }
 
@@ -204,15 +204,15 @@ sendAdminMessage(content: string, sessionId: string): void {
     const sessions = this.getSessions();
     const updatedSessions = sessions.map(session => {
       if (session.id === sessionId) {
-        return { 
-          ...session, 
-          assignedTo: adminName, 
+        return {
+          ...session,
+          assignedTo: adminName,
           status: 'active' as const
         };
       }
       return session;
     });
-    
+
     this.updateSessions(updatedSessions);
   }
 
@@ -277,7 +277,7 @@ sendAdminMessage(content: string, sessionId: string): void {
       }
       return admin;
     });
-    
+
     this.adminUsersSubject.next(updatedAdmins);
     this.saveToLocalStorage(this.adminKey, updatedAdmins);
   }
@@ -301,7 +301,7 @@ sendAdminMessage(content: string, sessionId: string): void {
   // Private methods
   private getOrCreateUserId(): string {
     if (!this.isBrowser) return 'anonymous_user_' + Date.now();
-    
+
     let userId = localStorage.getItem('chatUserId');
     if (!userId) {
       userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -312,10 +312,10 @@ sendAdminMessage(content: string, sessionId: string): void {
 
   private updateUserSession(userId: string, userName: string, message: ChatMessage, sessionId: string): void {
     const sessions = this.getSessions();
-    
+
     // Find existing session for user
     let session = sessions.find(s => s.userId === userId);
-    
+
     if (!session) {
       // Create new session
       const newSession: ChatSession = {
@@ -327,7 +327,7 @@ sendAdminMessage(content: string, sessionId: string): void {
         status: 'pending' as const,
         createdAt: new Date()
       };
-      
+
       const updatedSessions = [...sessions, newSession];
       this.updateSessions(updatedSessions);
     } else {
@@ -339,11 +339,11 @@ sendAdminMessage(content: string, sessionId: string): void {
         lastActive: new Date(),
         status: session.status === 'resolved' ? 'pending' as const : session.status
       };
-      
-      const updatedSessions = sessions.map(s => 
+
+      const updatedSessions = sessions.map(s =>
         s.id === session!.id ? updatedSession : s
       );
-      
+
       this.updateSessions(updatedSessions);
     }
   }
@@ -371,30 +371,30 @@ sendAdminMessage(content: string, sessionId: string): void {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60000);
     const twoHoursAgo = new Date(now.getTime() - 120 * 60000);
-    
+
     return [
       {
         id: 'session_user_123',
         userId: 'user_123',
         userName: 'John Doe',
         userEmail: 'john@example.com',
-        userPhone: '9876543210',
+        userPhone: '8151070458',
         messages: [
-          { 
-            id: 1, 
+          {
+            id: 1,
             sessionId: 'session_user_123',
-            sender: 'user' as const, 
-            content: 'Hi, I need help with my order', 
-            timestamp: twoHoursAgo, 
-            isRead: true 
+            sender: 'user' as const,
+            content: 'Hi, I need help with my order',
+            timestamp: twoHoursAgo,
+            isRead: true
           },
-          { 
-            id: 2, 
+          {
+            id: 2,
             sessionId: 'session_user_123',
-            sender: 'admin' as const, 
-            content: 'Sure, how can I help?', 
-            timestamp: oneHourAgo, 
-            isRead: true 
+            sender: 'admin' as const,
+            content: 'Sure, how can I help?',
+            timestamp: oneHourAgo,
+            isRead: true
           }
         ],
         lastActive: oneHourAgo,
@@ -408,13 +408,13 @@ sendAdminMessage(content: string, sessionId: string): void {
         userName: 'Jane Smith',
         userEmail: 'jane@example.com',
         messages: [
-          { 
-            id: 3, 
+          {
+            id: 3,
             sessionId: 'session_user_456',
-            sender: 'user' as const, 
-            content: 'My food was delivered cold', 
-            timestamp: new Date(now.getTime() - 30 * 60000), 
-            isRead: false 
+            sender: 'user' as const,
+            content: 'My food was delivered cold',
+            timestamp: new Date(now.getTime() - 30 * 60000),
+            isRead: false
           }
         ],
         lastActive: new Date(now.getTime() - 30 * 60000),
@@ -427,21 +427,21 @@ sendAdminMessage(content: string, sessionId: string): void {
         userName: 'Robert Johnson',
         userPhone: '9876543211',
         messages: [
-          { 
-            id: 4, 
+          {
+            id: 4,
             sessionId: 'session_user_789',
-            sender: 'user' as const, 
-            content: 'Thanks for the help!', 
-            timestamp: new Date(now.getTime() - 180 * 60000), 
-            isRead: true 
+            sender: 'user' as const,
+            content: 'Thanks for the help!',
+            timestamp: new Date(now.getTime() - 180 * 60000),
+            isRead: true
           },
-          { 
-            id: 5, 
+          {
+            id: 5,
             sessionId: 'session_user_789',
-            sender: 'admin' as const, 
-            content: 'You\'re welcome!', 
-            timestamp: new Date(now.getTime() - 179 * 60000), 
-            isRead: true 
+            sender: 'admin' as const,
+            content: 'You\'re welcome!',
+            timestamp: new Date(now.getTime() - 179 * 60000),
+            isRead: true
           }
         ],
         lastActive: new Date(now.getTime() - 179 * 60000),

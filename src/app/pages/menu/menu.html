@@ -109,18 +109,29 @@
               
               <!-- QUICK ADDONS INFO -->
               <div class="flex flex-wrap gap-1 mb-3">
-                <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                  Onion
-                </span>
-                <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                  Tomato
-                </span>
-                <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                  Cucumber
-                </span>
-                <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
-                  +{{ food.addons.length - 3 }} more
-                </span>
+                <ng-container *ngIf="!food.showAllAddons">
+                  <span *ngFor="let addon of food.addons.slice(0, 3)" 
+                        class="text-xs px-2 py-1 rounded"
+                        [ngClass]="addon.price === 0 ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'">
+                    {{ addon.name }}
+                  </span>
+                  <button *ngIf="food.addons.length > 3" 
+                        (click)="food.showAllAddons = true"
+                        class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded cursor-pointer hover:bg-gray-200 transition border-0">
+                    +{{ food.addons.length - 3 }} more
+                  </button>
+                </ng-container>
+                <ng-container *ngIf="food.showAllAddons">
+                  <span *ngFor="let addon of food.addons" 
+                        class="text-xs px-2 py-1 rounded"
+                        [ngClass]="addon.price === 0 ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'">
+                    {{ addon.name }}
+                  </span>
+                  <button (click)="food.showAllAddons = false"
+                        class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded cursor-pointer hover:bg-gray-200 transition border-0 font-medium">
+                    Show less
+                  </button>
+                </ng-container>
               </div>
             </div>
 
@@ -230,11 +241,11 @@
 
   <!-- MODAL -->
   <div
-    class="relative bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden
+    class="relative bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col
            animate-[modalFadeIn_0.3s_ease-out] shadow-2xl">
 
     <!-- HEADER -->
-    <div class="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
+    <div class="flex-shrink-0 bg-white border-b border-gray-200 p-6 z-10">
       <div class="flex justify-between items-center mb-2">
         <h3 class="text-xl font-bold text-gray-800">
           {{ selectedFood.name }}
@@ -259,7 +270,7 @@
     </div>
 
     <!-- CONTENT (Scrollable) -->
-    <div class="p-6 overflow-y-auto max-h-[60vh]">
+    <div class="flex-1 overflow-y-auto p-6">
 
       <!-- FREE ADDONS SECTION -->
       <div *ngIf="getFreeAddons(selectedFood).length" class="mb-8">
@@ -267,9 +278,6 @@
           <h4 class="text-lg font-semibold text-gray-800">
             Free Addons
           </h4>
-          <span class="text-sm text-green-600 font-medium bg-green-50 px-3 py-1 rounded-full">
-            All checked by default
-          </span>
         </div>
         <p class="text-sm text-gray-500 mb-4">
           These addons are included for free. You can uncheck any you don't want.
@@ -381,8 +389,8 @@
 
     </div>
 
-    <!-- FOOTER (Sticky) -->
-    <div class="sticky bottom-0 bg-white border-t border-gray-200 p-6">
+    <!-- FOOTER -->
+    <div class="flex-shrink-0 bg-white border-t border-gray-200 p-6">
       
       <!-- TOTAL SUMMARY -->
       <div class="mb-6">

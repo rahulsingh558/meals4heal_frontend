@@ -37,6 +37,13 @@ export class AuthComponent implements OnInit {
     showWhatsAppModal = false;
     whatsappNumber = '';
     countryCode = '+91';
+
+    // Email OTP State
+    showEmailModal = false;
+    emailForOtp = '';
+
+    // Shared OTP State
+    isSendingOtp = false;
     otpSent = false;
     otp: string[] = ['', '', '', '', '', ''];
     resendTimer = 0;
@@ -57,7 +64,8 @@ export class AuthComponent implements OnInit {
 
     ngOnInit() {
         if (this.authService.isAuthenticated()) {
-            this.router.navigate(['/menu']);
+            const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/menu';
+            this.router.navigate([returnUrl]);
         }
 
         const url = this.router.url;
@@ -148,7 +156,8 @@ export class AuthComponent implements OnInit {
             next: () => console.log('Cart migrated'),
             error: (err) => console.error('Error migrating cart:', err),
             complete: () => {
-                const redirect = localStorage.getItem('redirectAfterLogin') || '/menu';
+                const queryRedirect = this.route.snapshot.queryParams['returnUrl'];
+                const redirect = queryRedirect || localStorage.getItem('redirectAfterLogin') || '/menu';
                 localStorage.removeItem('redirectAfterLogin');
                 this.router.navigate([redirect]);
             }
@@ -189,15 +198,18 @@ export class AuthComponent implements OnInit {
 
         const fullPhone = this.countryCode + this.whatsappNumber;
         this.otpError = '';
+        this.isSendingOtp = true;
 
         this.authService.sendWhatsAppOtp(fullPhone).subscribe({
             next: () => {
+                this.isSendingOtp = false;
                 this.startResendTimer();
                 this.otpSent = true;
                 this.cd.detectChanges();
                 setTimeout(() => this.focusOtpInput(0), 100);
             },
             error: () => {
+                this.isSendingOtp = false;
                 this.otpError = 'Failed to send OTP. Please try again.';
                 this.cd.detectChanges();
             }
@@ -237,7 +249,13 @@ export class AuthComponent implements OnInit {
         }
 
         if (index === 5 && value && this.isOtpComplete()) {
-            setTimeout(() => this.verifyOTP(), 100);
+            setTimeout(() => {
+                if (this.showEmailModal) {
+                    this.verifyEmailOTP();
+                } else {
+                    this.verifyOTP();
+                }
+            }, 100);
         }
     }
 
@@ -273,7 +291,13 @@ export class AuthComponent implements OnInit {
             }
             setTimeout(() => this.focusOtpInput(5), 10);
             if (this.isOtpComplete()) {
-                setTimeout(() => this.verifyOTP(), 100);
+                setTimeout(() => {
+                    if (this.showEmailModal) {
+                        this.verifyEmailOTP();
+                    } else {
+                        this.verifyOTP();
+                    }
+                }, 100);
             }
         }
     }
@@ -297,6 +321,85 @@ export class AuthComponent implements OnInit {
         this.authService.verifyWhatsAppOtp(fullPhone, enteredOTP).subscribe({
             next: () => {
                 this.closeWhatsAppModal();
+                this.handleAuthSuccess();
+                this.cd.detectChanges();
+            },
+            error: () => {
+                this.otpError = 'Invalid OTP. Please try again.';
+                this.otp = ['', '', '', '', '', ''];
+                this.cd.detectChanges();
+                setTimeout(() => this.focusOtpInput(0), 100);
+            }
+        });
+    }
+
+    // --- Email OTP Functionality ---
+
+    openEmailModal() {
+        this.showEmailModal = true;
+        this.resetEmailForm();
+    }
+
+    closeEmailModal() {
+        this.showEmailModal = false;
+        this.resetEmailForm();
+        if (this.otpInterval) {
+            clearInterval(this.otpInterval);
+        }
+    }
+
+    resetEmailForm() {
+        this.emailForOtp = '';
+        this.otpSent = false;
+        this.otp = ['', '', '', '', '', ''];
+        this.resendTimer = 0;
+        this.otpError = '';
+        if (this.otpInterval) {
+            clearInterval(this.otpInterval);
+        }
+    }
+
+    requestEmailOTP() {
+        if (!this.emailForOtp) return;
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(this.emailForOtp)) {
+            this.otpError = 'Please enter a valid email address';
+            return;
+        }
+
+        this.otpError = '';
+        this.isSendingOtp = true;
+
+        this.authService.sendEmailOtp(this.emailForOtp).subscribe({
+            next: () => {
+                this.isSendingOtp = false;
+                this.startResendTimer();
+                this.otpSent = true;
+                this.cd.detectChanges();
+                setTimeout(() => this.focusOtpInput(0), 100);
+            },
+            error: () => {
+                this.isSendingOtp = false;
+                this.otpError = 'Failed to send OTP. Please try again.';
+                this.cd.detectChanges();
+            }
+        });
+    }
+
+    resendEmailOTP() {
+        if (this.otpInterval) clearInterval(this.otpInterval);
+        this.requestEmailOTP();
+        this.otp = ['', '', '', '', '', ''];
+    }
+
+    verifyEmailOTP() {
+        const enteredOTP = this.otp.join('');
+        this.otpError = '';
+
+        this.authService.verifyEmailOtp(this.emailForOtp, enteredOTP).subscribe({
+            next: () => {
+                this.closeEmailModal();
                 this.handleAuthSuccess();
                 this.cd.detectChanges();
             },

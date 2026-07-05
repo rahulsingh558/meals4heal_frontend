@@ -109,6 +109,38 @@
             class="w-full border rounded p-2 focus:ring focus:ring-green-200" placeholder="Landmark">
         </div>
       </div>
+
+      <!-- GPS Location Detection -->
+      <div class="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">📍</span>
+            <span class="text-sm font-medium text-gray-700">GPS Location</span>
+          </div>
+          <button (click)="detectLocation()" [disabled]="isDetectingLocation"
+            class="px-3 py-1.5 text-sm rounded-lg font-medium transition cursor-pointer" [ngClass]="locationDetected
+              ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200'
+              : 'bg-blue-600 text-white hover:bg-blue-700'">
+            <span *ngIf="isDetectingLocation" class="flex items-center gap-1">
+              <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                </path>
+              </svg>
+              Detecting...
+            </span>
+            <span *ngIf="!isDetectingLocation && locationDetected">✅ Re-detect Location</span>
+            <span *ngIf="!isDetectingLocation && !locationDetected">Detect My Location</span>
+          </button>
+        </div>
+        <p *ngIf="locationDetected && editedAddress.lat && editedAddress.lng" class="text-xs text-green-600 mt-2">
+          📌 Location captured: {{ editedAddress.lat?.toFixed(5) }}, {{ editedAddress.lng?.toFixed(5) }}
+        </p>
+        <p *ngIf="locationError" class="text-xs text-red-500 mt-2">
+          ⚠️ {{ locationError }}
+        </p>
+      </div>
     </div>
     <div class="mt-6 flex justify-end gap-2">
       <button (click)="closeAddressModal()"
@@ -136,7 +168,7 @@
     <p class="text-gray-600 mb-6">Having trouble with your order? Our support team is here to help you.</p>
 
     <div class="space-y-3">
-      <a href="tel:+919876543210"
+      <a href="tel:+918151070458"
         class="block w-full py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition flex items-center justify-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -144,7 +176,7 @@
         </svg>
         Call Support
       </a>
-      <a href="mailto:support@mealtoheal.com"
+      <a href="mailto:support@meals4heal.in"
         class="block w-full py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition flex items-center justify-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

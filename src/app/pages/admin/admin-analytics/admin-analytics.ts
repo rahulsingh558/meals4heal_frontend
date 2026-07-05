@@ -1,63 +1,155 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
+
+interface DayRevenue {
+  _id: { year: number; month: number; day: number };
+  revenue: number;
+  orders: number;
+}
+
+interface StatusEntry { _id: string; count: number; }
+interface BestSellingItem { _id: string; totalSold: number; totalRevenue: number; }
+
+interface AnalyticsSummary {
+  totalOrders: number;
+  totalRevenue: number;
+  avgOrderValue: number;
+  periodOrders: number;
+  periodRevenue: number;
+  days: number;
+}
+
+interface Analytics {
+  revenueByDay: DayRevenue[];
+  statusBreakdown: StatusEntry[];
+  bestSelling: BestSellingItem[];
+  summary: AnalyticsSummary;
+}
 
 @Component({
   selector: 'app-admin-analytics',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './admin-analytics.html',
 })
-export class AdminAnalyticsComponent {
-  // Analytics data
-  monthlyRevenue = [8200, 9100, 7600, 10400, 11980, 9800, 11200, 13200, 14800, 12500, 14100, 15800];
-  monthlyOrders = [42, 48, 35, 52, 61, 49, 56, 68, 74, 62, 71, 79];
-  
-  topProducts = [
-    { name: 'Moong Sprouts Bowl', sales: 245, revenue: 19600 },
-    { name: 'Egg Meal Bowl', sales: 189, revenue: 22680 },
-    { name: 'Chicken Bowl', sales: 156, revenue: 21840 },
-    { name: 'Paneer Sprouts Bowl', sales: 132, revenue: 14520 },
-    { name: 'Sprouts Salad', sales: 98, revenue: 6860 },
-  ];
+export class AdminAnalyticsComponent implements OnInit {
+  loading = true;
+  error = '';
+  selectedDays = 30;
+  Math = Math; // expose to template
 
-  customerDemographics = [
-    { age: '18-24', percentage: 25 },
-    { age: '25-34', percentage: 45 },
-    { age: '35-44', percentage: 20 },
-    { age: '45+', percentage: 10 },
-  ];
+  analytics: Analytics = {
+    revenueByDay: [],
+    statusBreakdown: [],
+    bestSelling: [],
+    summary: { totalOrders: 0, totalRevenue: 0, avgOrderValue: 0, periodOrders: 0, periodRevenue: 0, days: 30 }
+  };
 
-  get maxRevenue() {
-    return Math.max(...this.monthlyRevenue);
+  constructor(
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {}
+
+  ngOnInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      this.loadAnalytics();
+    }
   }
 
-  get maxOrders() {
-    return Math.max(...this.monthlyOrders);
+  loadAnalytics() {
+    this.loading = true;
+    this.error = '';
+    this.http.get<{ success: boolean; analytics: Analytics }>(
+      `${environment.apiUrl}/admin/analytics?days=${this.selectedDays}`
+    ).subscribe({
+      next: (res) => {
+        if (res.success) this.analytics = res.analytics;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Analytics error:', err);
+        this.error = 'Failed to load analytics data.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
-  get totalRevenue() {
-    return this.monthlyRevenue.reduce((a, b) => a + b, 0);
+  onPeriodChange() {
+    this.loadAnalytics();
   }
 
-  get totalOrders() {
-    return this.monthlyOrders.reduce((a, b) => a + b, 0);
+  /* ============================
+     CHART HELPERS
+  ============================= */
+  get maxRevenue(): number {
+    return Math.max(1, ...this.analytics.revenueByDay.map(d => d.revenue));
   }
 
-  get averageOrderValue() {
-    return Math.round(this.totalRevenue / this.totalOrders);
+  get maxOrders(): number {
+    return Math.max(1, ...this.analytics.revenueByDay.map(d => d.orders));
   }
 
-  get revenueGrowth() {
-    const lastMonth = this.monthlyRevenue[this.monthlyRevenue.length - 1];
-    const prevMonth = this.monthlyRevenue[this.monthlyRevenue.length - 2];
-    return Math.round(((lastMonth - prevMonth) / prevMonth) * 100);
+  /** Format a DayRevenue _id into a short label */
+  dayLabel(d: DayRevenue): string {
+    return `${d._id.day}/${d._id.month}`;
   }
 
-  getOrderLinePoints(): string {
-  return this.monthlyOrders.map((value, i) => {
-    const x = i * 30 + 20;
-    const y = 160 - (value / this.maxOrders) * 120;
-    return `${x},${y}`;
-  }).join(' ');
-}
+  /** SVG polyline points for the orders line chart */
+  getRevenueLinePoints(): string {
+    const data = this.analytics.revenueByDay;
+    if (!data.length) return '';
+    const step = Math.min(380 / Math.max(data.length - 1, 1), 40);
+    return data.map((d, i) => {
+      const x = i * step + 20;
+      const y = 160 - (d.revenue / this.maxRevenue) * 120;
+      return `${x},${y}`;
+    }).join(' ');
+  }
+
+  getOrdersLinePoints(): string {
+    const data = this.analytics.revenueByDay;
+    if (!data.length) return '';
+    const step = Math.min(380 / Math.max(data.length - 1, 1), 40);
+    return data.map((d, i) => {
+      const x = i * step + 20;
+      const y = 160 - (d.orders / this.maxOrders) * 120;
+      return `${x},${y}`;
+    }).join(' ');
+  }
+
+  /* Status display */
+  statusLabel(s: string): string {
+    const map: Record<string, string> = {
+      pending: 'Pending', confirmed: 'Confirmed', preparing: 'Preparing',
+      out_for_delivery: 'Out for Delivery', delivered: 'Delivered', cancelled: 'Cancelled'
+    };
+    return map[s] || s;
+  }
+
+  statusColor(s: string): string {
+    const map: Record<string, string> = {
+      pending: '#f59e0b', confirmed: '#3b82f6', preparing: '#8b5cf6',
+      out_for_delivery: '#6366f1', delivered: '#10b981', cancelled: '#ef4444'
+    };
+    return map[s] || '#6b7280';
+  }
+
+  get totalStatusCount(): number {
+    return this.analytics.statusBreakdown.reduce((s, x) => s + x.count, 0);
+  }
+
+  statusPercent(count: number): number {
+    const t = this.totalStatusCount;
+    return t > 0 ? Math.round((count / t) * 100) : 0;
+  }
+
+  get maxBestSelling(): number {
+    return Math.max(1, ...this.analytics.bestSelling.map(b => b.totalSold));
+  }
 }

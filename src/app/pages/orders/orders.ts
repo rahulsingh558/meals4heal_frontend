@@ -19,13 +19,26 @@ export class OrdersPage implements OnInit {
   // Address Modal State
   showAddressModal = false;
   selectedOrder: Order | null = null;
-  editedAddress = {
+  editedAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    landmark: string;
+    lat?: number;
+    lng?: number;
+  } = {
     street: '',
     city: '',
     state: '',
     zipCode: '',
     landmark: ''
   };
+
+  // GPS Location State
+  isDetectingLocation = false;
+  locationDetected = false;
+  locationError = '';
 
   // Help Modal State
   showHelpModal = false;
@@ -93,8 +106,12 @@ export class OrdersPage implements OnInit {
         city: order.deliveryAddress.city,
         state: order.deliveryAddress.state,
         zipCode: order.deliveryAddress.zipCode,
-        landmark: order.deliveryAddress.landmark || ''
+        landmark: order.deliveryAddress.landmark || '',
+        lat: order.deliveryAddress.lat,
+        lng: order.deliveryAddress.lng
       };
+      this.locationDetected = !!(order.deliveryAddress.lat && order.deliveryAddress.lng);
+      this.locationError = '';
       this.showAddressModal = true;
     }
   }
@@ -102,6 +119,55 @@ export class OrdersPage implements OnInit {
   closeAddressModal() {
     this.showAddressModal = false;
     this.selectedOrder = null;
+    this.locationDetected = false;
+    this.locationError = '';
+    this.isDetectingLocation = false;
+  }
+
+  /**
+   * Detect user's GPS location using browser geolocation API
+   */
+  detectLocation() {
+    if (!this.isBrowser || !navigator.geolocation) {
+      this.locationError = 'Geolocation is not supported by your browser';
+      return;
+    }
+
+    this.isDetectingLocation = true;
+    this.locationError = '';
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.editedAddress.lat = position.coords.latitude;
+        this.editedAddress.lng = position.coords.longitude;
+        this.locationDetected = true;
+        this.isDetectingLocation = false;
+        this.locationError = '';
+        this.cdr.detectChanges();
+      },
+      (error) => {
+        this.isDetectingLocation = false;
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            this.locationError = 'Location access denied. Please allow location access in your browser settings.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            this.locationError = 'Location unavailable. Please try again.';
+            break;
+          case error.TIMEOUT:
+            this.locationError = 'Location request timed out. Please try again.';
+            break;
+          default:
+            this.locationError = 'Unable to detect location. Please try again.';
+        }
+        this.cdr.detectChanges();
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
   }
 
   updateAddress() {

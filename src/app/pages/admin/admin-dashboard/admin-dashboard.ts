@@ -1,213 +1,202 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import {
-  MenuAdminService,
-  AdminMenuItem,
-} from '../../../services/menu-admin.service';
+import { HttpClient } from '@angular/common/http';
+import { OrderService, OrderStats, BestSellingItem, Order } from '../../../services/order.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './admin-dashboard.html',
 })
-export class AdminDashboard {
+export class AdminDashboard implements OnInit, OnDestroy {
+  isBrowser = false;
+
   /* =========================
-     MENU ITEMS
+     LIVE ORDER STATS
   ========================== */
-  items: AdminMenuItem[] = [];
-  showMenuForm = false;
-  
-  newItem: Omit<AdminMenuItem, 'id'> = {
-    name: '',
-    subtitle: 'Healthy • Fresh • Protein-rich',
-    basePrice: 0,
-    type: 'veg', // Default type
-    image: '',
-    defaultAddons: [],
-    extraAddons: [],
+  orderStats: OrderStats = {
+    totalOrders: 0, periodOrders: 0, totalRevenue: 0,
+    periodRevenue: 0, avgOrderValue: 0, statusBreakdown: []
   };
+  bestSelling: BestSellingItem[] = [];
+  recentOrders: Order[] = [];
+  statsLoading = true;
 
   /* =========================
-     DASHBOARD METRICS
+     SYSTEM STATS (live)
   ========================== */
-  totalOrders = 124;
-  totalCustomers = 68;
-  notifications = 3;
-
-  revenueThisWeek = 11980;
-  revenueLastWeek = 9800;
-
-  get totalRevenue(): number {
-    return this.revenueThisWeek;
-  }
-
-  get revenueChangePercent(): number {
-    if (this.revenueLastWeek === 0) return 0;
-    return Math.round(
-      ((this.revenueThisWeek - this.revenueLastWeek) /
-        this.revenueLastWeek) *
-        100
-    );
-  }
-
-  /* ✅ ALIAS USED BY TEMPLATE */
-  get revenueGrowthPercent(): number {
-    return this.revenueChangePercent;
-  }
+  systemStats = {
+    totalUsers: 0, serverLoad: 0, memoryUsed: 0, memoryTotal: 0,
+    memoryPercent: 0, uptime: 0, responseTime: 0, cpus: 1
+  };
+  systemStatsLoading = true;
+  systemStatsError = '';
 
   /* =========================
-     ORDERS BAR CHART
+     CHART DATA (from API)
   ========================== */
-  ordersChart: { day: string; value: number }[] = [
-    { day: 'Mon', value: 12 },
-    { day: 'Tue', value: 18 },
-    { day: 'Wed', value: 9 },
-    { day: 'Thu', value: 15 },
-    { day: 'Fri', value: 21 },
-  ];
-
-  maxOrders = Math.max(...this.ordersChart.map(o => o.value));
-
-  get ordersLast5Days(): number {
-    return this.ordersChart.reduce((sum, o) => sum + o.value, 0);
-  }
-
-  /* =========================
-     REVENUE LINE CHART
-  ========================== */
-  revenueChart: { day: string; value: number }[] = [
-    { day: 'Mon', value: 8200 },
-    { day: 'Tue', value: 9100 },
-    { day: 'Wed', value: 7600 },
-    { day: 'Thu', value: 10400 },
-    { day: 'Fri', value: 11980 },
-  ];
-
-  maxRevenue = Math.max(...this.revenueChart.map(r => r.value));
+  revenueChart: { label: string; revenue: number; orders: number }[] = [];
+  maxRevenue = 1;
   revenuePolylinePoints = '';
 
-  /* =========================
-     TABLE DATA
-  ========================== */
-  recentOrders = [
-    { id: '#ORD-101', customer: 'Rahul', amount: 280, status: 'Paid' },
-    { id: '#ORD-102', customer: 'Amit', amount: 160, status: 'Paid' },
-    { id: '#ORD-103', customer: 'Neha', amount: 340, status: 'Pending' },
-    { id: '#ORD-104', customer: 'Sneha', amount: 220, status: 'Paid' },
-    { id: '#ORD-105', customer: 'Vikas', amount: 180, status: 'Cancelled' },
-  ];
-
-  bestSelling = [
-    { name: 'Moong Sprouts Bowl', sold: 52 },
-    { name: 'Egg Meal Bowl', sold: 41 },
-    { name: 'Paneer Sprouts Bowl', sold: 34 },
-    { name: 'Chicken Bowl', sold: 28 },
-  ];
+  private refreshTimer: any;
 
   constructor(
-    private menuService: MenuAdminService
+    private orderService: OrderService,
+    private http: HttpClient,
+    private cdr: ChangeDetectorRef,
+    @Inject(PLATFORM_ID) platformId: Object
   ) {
-    /* Seed menu once */
-    this.menuService.seedIfEmpty([
-      {
-        id: 1,
-        name: 'Moong Sprouts Bowl',
-        subtitle: 'Healthy • Fresh • Protein-rich',
-        basePrice: 80,
-        type: 'veg',
-        image:
-          'https://images.unsplash.com/photo-1540420828642-fca2c5c18abe?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80',
-        defaultAddons: [
-          { id: 1, name: 'Onion', price: 0 },
-          { id: 2, name: 'Tomato', price: 0 },
-          { id: 3, name: 'Cucumber', price: 0 },
-        ],
-        extraAddons: [],
-      },
-      {
-        id: 2,
-        name: 'Egg Meal Bowl',
-        subtitle: 'Protein-packed • Healthy • Delicious',
-        basePrice: 120,
-        type: 'egg',
-        image:
-          'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80',
-        defaultAddons: [
-          { id: 1, name: 'Lettuce', price: 0 },
-          { id: 2, name: 'Carrot', price: 0 },
-        ],
-        extraAddons: [
-          { id: 3, name: 'Extra Cheese', price: 20 },
-          { id: 4, name: 'Avocado', price: 30 },
-        ],
-      },
-      {
-        id: 3,
-        name: 'Chicken Bowl',
-        subtitle: 'High Protein • Non-Vegetarian • Fresh',
-        basePrice: 140,
-        type: 'nonveg',
-        image:
-          'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80',
-        defaultAddons: [
-          { id: 1, name: 'Onion', price: 0 },
-          { id: 2, name: 'Tomato', price: 0 },
-          { id: 3, name: 'Capsicum', price: 0 },
-        ],
-        extraAddons: [
-          { id: 4, name: 'Extra Chicken', price: 50 },
-        ],
-      },
-    ]);
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
 
-    this.loadItems();
-    this.buildRevenuePolyline();
+  ngOnInit() {
+    if (this.isBrowser) {
+      this.loadDashboardData();
+      this.startSystemStatsPolling();
+      this.refreshTimer = setInterval(() => this.loadDashboardData(), 60000);
+    }
+  }
+
+  ngOnDestroy() {
+    clearInterval(this.refreshTimer);
+  }
+
+  /* =========================
+     LOAD ORDER METRICS
+  ========================== */
+  loadDashboardData() {
+    this.statsLoading = true;
+
+    // Summary stats (7-day period)
+    this.orderService.getOrderStats('7d').subscribe({
+      next: (res) => {
+        if (res.success) this.orderStats = res.stats;
+        this.statsLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.statsLoading = false; this.cdr.detectChanges(); }
+    });
+
+    // Best selling items
+    this.orderService.getBestSellingItems(5).subscribe({
+      next: (res) => { if (res.success) this.bestSelling = res.bestSelling; this.cdr.detectChanges(); },
+      error: () => {}
+    });
+
+    // Recent 5 orders
+    this.orderService.getAllOrders({ limit: 5, sortBy: '-createdAt' }).subscribe({
+      next: (res) => {
+        if (res.success) this.recentOrders = res.orders;
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+
+    // Revenue chart (last 7 days)
+    this.orderService.getRevenueData('7d', 'day').subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.revenueChart = res.revenueData.map(d => ({
+            label: `${d._id.day}/${d._id.month}`,
+            revenue: d.revenue,
+            orders: d.orders
+          }));
+          this.maxRevenue = Math.max(1, ...this.revenueChart.map(r => r.revenue));
+          this.buildRevenuePolyline();
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {}
+    });
+  }
+
+  buildRevenuePolyline() {
+    if (!this.revenueChart.length) { this.revenuePolylinePoints = ''; return; }
+    const step = 80;
+    this.revenuePolylinePoints = this.revenueChart
+      .map((p, i) => `${i * step + 40},${160 - (p.revenue / this.maxRevenue) * 120}`)
+      .join(' ');
+  }
+
+  /* =========================
+     SYSTEM STATS POLLING
+  ========================== */
+  startSystemStatsPolling() {
+    this.fetchSystemStats();
+    setInterval(() => this.fetchSystemStats(), 15000);
+  }
+
+  fetchSystemStats() {
+    this.http.get<{ success: boolean; stats: any }>(`${environment.apiUrl}/admin/system-stats`).subscribe({
+      next: (res) => {
+        if (res.success) { this.systemStats = res.stats; this.systemStatsError = ''; }
+        this.systemStatsLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.systemStatsError = 'Could not load stats';
+        this.systemStatsLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   /* =========================
      HELPERS
   ========================== */
-  buildRevenuePolyline() {
-    this.revenuePolylinePoints = this.revenueChart
-      .map(
-        (p, i) =>
-          `${i * 80 + 40},${160 - (p.value / this.maxRevenue) * 120}`
-      )
-      .join(' ');
+  formatUptime(seconds: number): string {
+    if (seconds < 60) return `${seconds}s`;
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (d > 0) return `${d}d ${h}h ${m}m`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
   }
 
-  /* =========================
-     CRUD
-  ========================== */
-  loadItems() {
-    this.items = this.menuService.getAll();
+  getLoadColor(percent: number): string {
+    if (percent < 50) return 'bg-green-500';
+    if (percent < 80) return 'bg-yellow-500';
+    return 'bg-red-500';
   }
 
-  addItem() {
-    if (!this.newItem.name || this.newItem.basePrice <= 0) return;
+  getLoadTextColor(percent: number): string {
+    if (percent < 50) return 'text-green-600';
+    if (percent < 80) return 'text-yellow-600';
+    return 'text-red-600';
+  }
 
-    this.menuService.add(this.newItem);
-    this.loadItems();
-
-    // Reset form
-    this.newItem = {
-      name: '',
-      subtitle: 'Healthy • Fresh • Protein-rich',
-      basePrice: 0,
-      type: 'veg',
-      image: '',
-      defaultAddons: [],
-      extraAddons: [],
+  getStatusText(status: string): string {
+    const map: Record<string, string> = {
+      pending: 'Pending', confirmed: 'Confirmed', preparing: 'Preparing',
+      out_for_delivery: 'Out for Delivery', delivered: 'Delivered', cancelled: 'Cancelled'
     };
-    
-    this.showMenuForm = false;
+    return map[status] || status;
   }
 
-  deleteItem(id: number) {
-    if (confirm('Are you sure you want to delete this item?')) {
-      this.menuService.delete(id);
-      this.loadItems();
-    }
+  getStatusBadgeClass(status: string): string {
+    const map: Record<string, string> = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      confirmed: 'bg-blue-100 text-blue-800',
+      preparing: 'bg-purple-100 text-purple-800',
+      out_for_delivery: 'bg-indigo-100 text-indigo-800',
+      delivered: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800'
+    };
+    return map[status] || 'bg-gray-100 text-gray-800';
+  }
+
+  formatDate(d: any): string {
+    if (!d) return '';
+    return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  }
+
+  get pendingCount(): number {
+    return (this.orderStats.statusBreakdown || [])
+      .filter(s => ['pending', 'confirmed', 'preparing'].includes(s._id))
+      .reduce((sum, s) => sum + s.count, 0);
   }
 }
