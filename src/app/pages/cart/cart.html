@@ -54,9 +54,17 @@
       </div>
 
       <!-- TOTAL + CTA -->
-      <div class="mt-8">
-        <p class="font-bold text-right text-lg mb-4">
-          Total: ₹{{ getGrandTotal() }}
+      <div class="mt-8 space-y-2">
+        <div class="flex justify-end text-gray-600">
+          <span class="w-32 text-right">Subtotal:</span>
+          <span class="w-24 text-right">₹{{ getGrandTotal() }}</span>
+        </div>
+        <div class="flex justify-end text-gray-600">
+          <span class="w-32 text-right">GST (5%):</span>
+          <span class="w-24 text-right">₹{{ getGrandTotal() * 0.05 | number:'1.2-2' }}</span>
+        </div>
+        <p class="font-bold text-right text-lg mb-4 mt-2 pt-2 border-t border-gray-200">
+          Total: ₹{{ getGrandTotal() + (getGrandTotal() * 0.05) | number:'1.2-2' }}
         </p>
 
         <button (click)="proceedToCheckout()"

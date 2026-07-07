@@ -164,8 +164,23 @@
       </div>
 
       <!-- Bowl Details Card -->
-      <div class="lg:w-1/2 w-full mt-8 lg:mt-0">
+      <div class="lg:w-1/2 w-full mt-8 lg:mt-0 relative">
+        <!-- Mobile Navigation Buttons -->
+        <button (click)="prevBowl()"
+          class="lg:hidden absolute -left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-slate-800 hover:bg-green-50 hover:text-green-600 transition-all z-30 border border-slate-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button (click)="nextBowl()"
+          class="lg:hidden absolute -right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-slate-800 hover:bg-green-50 hover:text-green-600 transition-all z-30 border border-slate-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
         <div class="glass-panel bg-white/60 p-6 sm:p-10 rounded-[1.5rem] sm:rounded-[2rem] relative overflow-hidden">
+          
           <div class="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-green-100 rounded-bl-full -z-10"></div>
 
           <div

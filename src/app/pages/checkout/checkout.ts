@@ -8,6 +8,7 @@ import { AddressService } from '../../services/address.service';
 import { OrderService, Order, OrderItem } from '../../services/order.service';
 import { Address } from '../../pages/address/address';
 
+declare var Razorpay: any;
 
 interface PaymentMethod {
   id: string;
@@ -60,6 +61,11 @@ export class Checkout implements OnInit {
   isRequestingLocation = false;
   locationCaptured = false;
 
+  // Toast Notification
+  toastMessage = '';
+  toastType: 'success' | 'error' = 'error';
+  toastTimeout: any;
+
   // Payment methods
   paymentMethods: PaymentMethod[] = [
     { id: 'cod', name: 'Cash on Delivery', icon: '💵', description: 'Pay when you receive' },
@@ -105,8 +111,10 @@ export class Checkout implements OnInit {
       const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
 
       if (!isLoggedIn) {
-        alert('Please login to place an order');
-        this.router.navigate(['/auth'], { queryParams: { returnUrl: '/checkout' } });
+        this.showToast('Please login to place an order', 'error');
+        setTimeout(() => {
+          this.router.navigate(['/auth'], { queryParams: { returnUrl: '/checkout' } });
+        }, 1500);
         return;
       }
 
@@ -120,6 +128,7 @@ export class Checkout implements OnInit {
     // Get cart items
     this.cartService.cart$.subscribe(cart => {
       this.items = cart.items;
+      this.cdr.detectChanges();
       if (cart.items.length === 0 && !this.isPlacingOrder) {
         this.router.navigate(['/cart']);
       }
@@ -219,21 +228,7 @@ export class Checkout implements OnInit {
   }
 
   isOnlinePaymentValid(): boolean {
-    switch (this.onlinePaymentMethod) {
-      case 'upi':
-        return this.upiId.trim().length > 0 && this.upiId.includes('@');
-      case 'card':
-        return this.cardNumber.replace(/\s/g, '').length === 16 &&
-          this.cardExpiry.trim().length === 5 &&
-          this.cardCvv.trim().length >= 3 &&
-          this.cardName.trim().length > 0;
-      case 'netbanking':
-        return true; // Bank is pre-selected
-      case 'wallet':
-        return true; // Wallet is pre-selected
-      default:
-        return false;
-    }
+    return true; // Form is now managed by Razorpay
   }
 
   getGrandTotal(): number {
@@ -248,7 +243,7 @@ export class Checkout implements OnInit {
   }
 
   getGst(): number {
-    return this.paymentMethod === 'online' ? Math.round(this.getGrandTotal() * 0.05) : 0;
+    return Math.round(this.getGrandTotal() * 0.05);
   }
 
   getTotalAmount(): number {
@@ -295,15 +290,7 @@ export class Checkout implements OnInit {
   }
 
   processOnlinePayment() {
-    if (!this.isOnlinePaymentValid()) return;
-
-    this.isProcessingPayment = true;
-
-    // Simulate payment processing
-    setTimeout(() => {
-      this.isProcessingPayment = false;
-      this.placeOrder();
-    }, 2000);
+    this.placeOrder();
   }
 
   placeOrder() {
@@ -343,7 +330,7 @@ export class Checkout implements OnInit {
       discount: 0,
       totalAmount: this.getTotalAmount(),
       paymentMethod: this.paymentMethod,
-      paymentStatus: this.paymentMethod === 'online' ? 'paid' : 'pending',
+      paymentStatus: 'pending', // Initially pending until Razorpay success
       specialInstructions: this.deliveryInstructions || undefined
     };
 
@@ -351,23 +338,25 @@ export class Checkout implements OnInit {
     this.orderService.createOrder(orderData as Order).subscribe({
       next: (response) => {
         if (response.success) {
-          // Clear cart
-          this.cartService.clearCart();
+          if (this.paymentMethod === 'online') {
+            this.initiateRazorpayPayment(response.order);
+          } else {
+            // Clear cart
+            this.cartService.clearCart();
 
-          // Navigate to orders page with success
-          this.router.navigate(['/orders']).then(() => {
-            alert(this.paymentMethod === 'online'
-              ? 'Payment successful! Order placed.'
-              : 'Order placed successfully! You will receive a confirmation call shortly.');
-          });
+            // Navigate to orders page with success
+            this.router.navigate(['/orders']).then(() => {
+              this.showToast('Order placed successfully! You will receive a confirmation call shortly.', 'success');
+            });
+          }
         } else {
-          alert('Failed to place order. Please try again.');
+          this.showToast('Failed to place order. Please try again.', 'error');
           this.isPlacingOrder = false;
         }
       },
       error: (error) => {
         console.error('Error placing order:', error);
-        alert('Error placing order. Please try again.');
+        this.showToast('Error placing order. Please try again.', 'error');
         this.isPlacingOrder = false;
       }
     });
@@ -386,5 +375,97 @@ export class Checkout implements OnInit {
     ].filter(part => part && part.trim() !== '');
 
     return parts.join(', ');
+  }
+
+  initiateRazorpayPayment(order: Order) {
+    if (!order._id) return;
+    
+    this.isPlacingOrder = true;
+    this.orderService.createPaymentOrder(order._id).subscribe({
+      next: (res) => {
+        if (res.success) {
+          const options = {
+            key: res.key,
+            amount: res.order.amount,
+            currency: res.order.currency,
+            name: "Meals4Heal",
+            description: "Food Delivery Order",
+            order_id: res.order.id,
+            handler: (response: any) => {
+              this.verifyRazorpayPayment(response, order._id!);
+            },
+            prefill: {
+              name: this.userName || this.selectedAddress?.name || "",
+              email: this.userEmail || "",
+              contact: this.userPhone || this.selectedAddress?.phone || ""
+            },
+            theme: {
+              color: "#16a34a"
+            },
+            modal: {
+              ondismiss: () => {
+                this.isPlacingOrder = false;
+                this.showToast('Payment cancelled by user.', 'error');
+              }
+            }
+          };
+          
+          const rzp = new Razorpay(options);
+          rzp.on('payment.failed', (response: any) => {
+             this.showToast('Payment Failed! ' + response.error.description, 'error');
+             this.isPlacingOrder = false;
+          });
+          rzp.open();
+        } else {
+          this.showToast('Failed to initialize payment.', 'error');
+          this.isPlacingOrder = false;
+        }
+      },
+      error: (err) => {
+        console.error('Payment order creation error', err);
+        this.showToast('Could not start payment. Please try again.', 'error');
+        this.isPlacingOrder = false;
+      }
+    });
+  }
+
+  verifyRazorpayPayment(response: any, orderId: string) {
+    this.orderService.verifyPayment({
+      razorpay_order_id: response.razorpay_order_id,
+      razorpay_payment_id: response.razorpay_payment_id,
+      razorpay_signature: response.razorpay_signature,
+      orderId: orderId
+    }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.cartService.clearCart();
+          this.isPlacingOrder = false;
+          this.router.navigate(['/orders']).then(() => {
+            this.showToast('Payment successful! Order placed.', 'success');
+          });
+        } else {
+          this.showToast('Payment verification failed.', 'error');
+          this.isPlacingOrder = false;
+        }
+      },
+      error: (err) => {
+        console.error('Verification error', err);
+        this.showToast('Payment verification failed.', 'error');
+        this.isPlacingOrder = false;
+      }
+    });
+  }
+
+  showToast(message: string, type: 'success' | 'error' = 'error') {
+    this.toastMessage = message;
+    this.toastType = type;
+    
+    if (this.toastTimeout) {
+      clearTimeout(this.toastTimeout);
+    }
+    
+    this.toastTimeout = setTimeout(() => {
+      this.toastMessage = '';
+    }, 4000);
   }
 }

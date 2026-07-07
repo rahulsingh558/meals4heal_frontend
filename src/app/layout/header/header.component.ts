@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID, HostListener } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, HostListener, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ClickOutsideDirective } from '../../directives/click-outside.directive';
@@ -49,13 +49,15 @@ export class HeaderComponent {
   constructor(
     private cartService: CartService,
     private router: Router,
-    @Inject(PLATFORM_ID) platformId: Object
+    @Inject(PLATFORM_ID) platformId: Object,
+    private cdr: ChangeDetectorRef
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
 
     if (this.isBrowser) {
       this.cartService.cart$.subscribe(cart => {
         this.cartCount = cart.itemCount;
+        this.cdr.detectChanges();
       });
     }
   }

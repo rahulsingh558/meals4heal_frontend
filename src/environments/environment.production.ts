@@ -4,7 +4,8 @@ export const environment = {
     apiUrl: 'https://api.meals4heal.in/api',
     mappls: {
         apiKey: '771985f5b0af98e110a1b13a73e27767',
-        restaurantELoc: 'ta34s7',
+        restaurantELoc: '560037',
+        restaurantDigipin: '4P3-J6T-78KF',
         restaurantCoords: {
             lat: 12.997558,
             lng: 77.658151

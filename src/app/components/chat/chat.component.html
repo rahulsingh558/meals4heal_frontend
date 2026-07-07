@@ -1,6 +1,7 @@
-<div class="chat-widget-container">
-  <!-- Chat Toggle Button -->
+<div class="chat-widget-container" [class.embedded]="isEmbedded">
+  <!-- Chat Toggle Button (Hidden when embedded) -->
   <button 
+    *ngIf="!isEmbedded"
     class="chat-toggle-btn"
     [class.active]="isChatOpen"
     (click)="toggleChat()"
@@ -13,7 +14,7 @@
   </button>
 
   <!-- Chat Window -->
-  <div class="chat-window" [class.active]="isChatOpen">
+  <div class="chat-window" [class.active]="isChatOpen || isEmbedded" [class.embedded-window]="isEmbedded">
     <!-- Chat Header -->
     <div class="chat-header">
       <div class="chat-header-content">
@@ -21,26 +22,26 @@
         <div class="chat-info">
           <h3>{{ selectedContact }}</h3>
           <div class="online-status">
-            <div class="status-dot"></div>
+            <div class="status-dot" *ngIf="isAgentOnline()"></div>
             <span>{{ isAgentOnline() ? 'Online now' : 'Usually replies in 5 mins' }}</span>
           </div>
         </div>
       </div>
       
-      <button class="new-chat-btn" (click)="startNewConversation()" title="Start new conversation">
-        <span>🔄</span>
-        <span>New</span>
-      </button>
-      
-      <button class="close-btn" (click)="toggleChat()" aria-label="Close chat">
-        <span>✕</span>
-      </button>
+      <div class="header-actions">
+        <button class="icon-btn" (click)="startNewConversation()" title="Start new conversation">
+          🔄
+        </button>
+        <button *ngIf="!isEmbedded" class="icon-btn" (click)="toggleChat()" aria-label="Close chat">
+          ✕
+        </button>
+      </div>
     </div>
 
     <!-- Messages Container -->
     <div class="messages-container" #messageContainer>
       <!-- Date Separator -->
-      <div class="date-separator">
+      <div class="date-separator" *ngIf="messages.length > 0">
         <span>{{ getTodayDate() }}</span>
       </div>
 
@@ -52,16 +53,16 @@
         
         <div class="message-content">
           <!-- Sender Label -->
-          <div class="message-sender">
+          <span class="message-sender">
             {{ getSenderLabel(message) }}
-          </div>
+          </span>
           
           <!-- Message Content -->
           {{ message.content }}
           
           <!-- Message Time -->
           <div class="message-time">
-            {{ formatTime(message.timestamp) }}
+            {{ formatTime(message.timestamp || message.createdAt) }}
           </div>
         </div>
       </div>
@@ -79,27 +80,31 @@
       </div>
     </div>
 
-    <!-- Quick Replies -->
-    <div *ngIf="showQuickReplies && quickReplies.length > 0" class="quick-replies-container">
-      <div class="quick-replies-title">Quick replies</div>
-      <div class="quick-replies-grid">
-        <button *ngFor="let reply of quickReplies" 
-                class="quick-reply-btn"
-                (click)="sendQuickReply(reply.text)">
-          <span *ngIf="reply.icon" class="quick-reply-icon">{{ reply.icon }}</span>
-          <span>{{ reply.text }}</span>
-        </button>
+    <!-- Suggestions Area (Quick Replies & Common Questions) -->
+    <div *ngIf="showQuickReplies" class="suggestions-container">
+      
+      <div *ngIf="quickReplies.length > 0">
+        <div class="suggestions-title">Quick actions</div>
+        <div class="quick-replies-scroll">
+          <button *ngFor="let reply of quickReplies" 
+                  class="quick-reply-btn"
+                  (click)="sendQuickReply(reply.text)">
+            <span *ngIf="reply.icon" class="quick-reply-icon">{{ reply.icon }}</span>
+            {{ reply.text }}
+          </button>
+        </div>
       </div>
-    </div>
 
-    <!-- Common Questions -->
-    <div *ngIf="showQuickReplies && commonQuestions.length > 0" class="common-questions">
-      <div class="common-questions-title">Common questions</div>
-      <button *ngFor="let question of commonQuestions" 
-              class="common-question-btn"
-              (click)="sendCommonQuestion(question)">
-        {{ question }}
-      </button>
+      <div *ngIf="commonQuestions.length > 0" style="margin-top: 12px;">
+        <div class="suggestions-title">Common questions</div>
+        <div class="common-questions">
+          <button *ngFor="let question of commonQuestions" 
+                  class="common-question-btn"
+                  (click)="sendCommonQuestion(question)">
+            {{ question }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Input Area -->
@@ -109,7 +114,7 @@
         class="message-input"
         [(ngModel)]="newMessage"
         (keyup.enter)="sendMessage()"
-        placeholder="Type your message here..."
+        placeholder="Type your message..."
         #chatInput
       />
       <button 

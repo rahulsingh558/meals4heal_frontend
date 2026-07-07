@@ -135,7 +135,7 @@
           </button>
         </div>
         <p *ngIf="locationDetected && editedAddress.lat && editedAddress.lng" class="text-xs text-green-600 mt-2">
-          📌 Location captured: {{ editedAddress.lat?.toFixed(5) }}, {{ editedAddress.lng?.toFixed(5) }}
+          📌 Location captured: {{ editedAddress.lat.toFixed(5) }}, {{ editedAddress.lng.toFixed(5) }}
         </p>
         <p *ngIf="locationError" class="text-xs text-red-500 mt-2">
           ⚠️ {{ locationError }}

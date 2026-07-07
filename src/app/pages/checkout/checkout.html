@@ -1,4 +1,15 @@
-<div class="min-h-screen bg-green-50 py-8">
+<div class="min-h-screen bg-green-50 py-8 relative">
+  <!-- TOAST NOTIFICATION -->
+  <div class="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none"
+       [class.opacity-0]="!toastMessage" [class.translate-y-[-20px]]="!toastMessage"
+       [class.opacity-100]="toastMessage" [class.translate-y-0]="toastMessage">
+    <div class="flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg font-medium"
+         [ngClass]="toastType === 'error' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-green-100 text-green-800 border border-green-200'">
+      <span>{{ toastType === 'error' ? '⚠️' : '✅' }}</span>
+      <span>{{ toastMessage }}</span>
+    </div>
+  </div>
+
   <div class="max-w-6xl mx-auto px-4 grid md:grid-cols-3 gap-8">
 
     <!-- LEFT COLUMN: ORDER DETAILS -->
@@ -134,111 +145,9 @@
 
         <!-- ONLINE PAYMENT FORM -->
         <div *ngIf="showOnlinePaymentForm" class="mt-6 pt-6 border-t">
-          <!-- ONLINE PAYMENT METHODS -->
-          <h3 class="font-medium text-gray-800 mb-4">Select Online Payment Option</h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <button *ngFor="let method of onlinePaymentMethods" (click)="onlinePaymentMethod = method.id"
-              [class.border-green-500]="onlinePaymentMethod === method.id"
-              [class.border-gray-200]="onlinePaymentMethod !== method.id"
-              class="p-3 border-2 rounded-lg text-center hover:bg-green-50 transition-colors">
-              <div class="text-xl mb-1">{{ method.icon }}</div>
-              <div class="font-medium text-gray-800 text-sm">{{ method.name }}</div>
-              <div class="text-xs text-gray-500">{{ method.description }}</div>
-            </button>
-          </div>
-
-          <!-- UPI FORM -->
-          <div *ngIf="onlinePaymentMethod === 'upi'" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                UPI ID *
-              </label>
-              <div class="flex gap-2">
-                <input type="text" [(ngModel)]="upiId" placeholder="username@upi"
-                  class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-                <button (click)="generateUpiId()"
-                  class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
-                  Sample
-                </button>
-              </div>
-              <p class="text-xs text-gray-500 mt-2">
-                Supported: Google Pay, PhonePe, Paytm, BHIM
-              </p>
-            </div>
-          </div>
-
-          <!-- CARD FORM -->
-          <div *ngIf="onlinePaymentMethod === 'card'" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Card Number *
-              </label>
-              <input type="text" [value]="cardNumber" (input)="formatCardNumber($event)"
-                placeholder="1234 5678 9012 3456" maxlength="19"
-                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Expiry (MM/YY) *
-                </label>
-                <input type="text" [value]="cardExpiry" (input)="formatExpiry($event)" placeholder="MM/YY" maxlength="5"
-                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  CVV *
-                </label>
-                <input type="password" [(ngModel)]="cardCvv" placeholder="123" maxlength="4"
-                  class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Name on Card *
-              </label>
-              <input type="text" [(ngModel)]="cardName" placeholder="John Doe"
-                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-            </div>
-          </div>
-
-          <!-- NET BANKING -->
-          <div *ngIf="onlinePaymentMethod === 'netbanking'" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Select Bank
-              </label>
-              <select [(ngModel)]="selectedBank"
-                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white">
-                <option *ngFor="let bank of banks" [value]="bank.id">
-                  {{ bank.name }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <!-- WALLET -->
-          <div *ngIf="onlinePaymentMethod === 'wallet'" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Select Wallet
-              </label>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <button *ngFor="let wallet of wallets" (click)="walletType = wallet.id"
-                  [class.border-green-500]="walletType === wallet.id" [class.border-gray-200]="walletType !== wallet.id"
-                  class="p-3 border-2 rounded-lg text-center hover:bg-green-50 transition-colors">
-                  <div class="text-xl mb-1">{{ wallet.icon }}</div>
-                  <div class="font-medium text-gray-800 text-sm">{{ wallet.name }}</div>
-                </button>
-              </div>
-            </div>
-          </div>
-
+          <p class="text-sm text-gray-600 mb-4">You will securely complete your payment using Razorpay (Cards, UPI, Netbanking, Wallets).</p>
           <!-- SECURITY BADGES -->
-          <div class="flex flex-wrap justify-center gap-4 mt-6 pt-6 border-t">
+          <div class="flex flex-wrap justify-center gap-4 mt-6">
             <div class="flex items-center gap-1">
               <span class="text-green-600 text-sm">🔒</span>
               <span class="text-xs text-gray-600">SSL Secure</span>
@@ -249,7 +158,7 @@
             </div>
             <div class="flex items-center gap-1">
               <span class="text-green-600 text-sm">✓</span>
-              <span class="text-xs text-gray-600">3D Secure</span>
+              <span class="text-xs text-gray-600">Razorpay Secured</span>
             </div>
           </div>
         </div>
@@ -321,8 +230,8 @@
             <span class="text-green-600">FREE</span>
           </div>
 
-          <div *ngIf="paymentMethod === 'online'" class="flex justify-between text-gray-600">
-            <span>GST (5%)</span>
+          <div class="flex justify-between text-gray-600">
+            <span>GST - 5%</span>
             <span>₹{{ getGst() | number:'1.2-2' }}</span>
           </div>
 
@@ -331,8 +240,8 @@
               <span>Total Amount</span>
               <span>₹{{ getTotalAmount() | number:'1.2-2' }}</span>
             </div>
-            <p *ngIf="paymentMethod === 'online'" class="text-xs text-gray-500 mt-1">
-              Inclusive of GST
+            <p class="text-xs text-gray-500 mt-1">
+              (Includes gst - 5%)
             </p>
           </div>
         </div>

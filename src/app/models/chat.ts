@@ -4,6 +4,7 @@ export interface ChatMessage {
   sender: 'user' | 'admin';
   content: string;
   timestamp: Date;
+  createdAt?: Date;
   isRead: boolean;
   userId?: string; // Optional: to identify user
   userName?: string; // Optional: user's name

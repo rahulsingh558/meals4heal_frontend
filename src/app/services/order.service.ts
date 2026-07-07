@@ -134,4 +134,12 @@ export class OrderService {
         const params = new HttpParams().set('limit', limit.toString());
         return this.http.get<any>(`${this.apiUrl}/stats/best-selling`, { params });
     }
+
+    createPaymentOrder(orderId: string): Observable<{ success: boolean; order: any; key: string; message?: string }> {
+        return this.http.post<any>(`${environment.apiUrl}/payment/create-order`, { orderId });
+    }
+
+    verifyPayment(data: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string; orderId: string }): Observable<{ success: boolean; message: string; order: Order }> {
+        return this.http.post<any>(`${environment.apiUrl}/payment/verify`, data);
+    }
 }

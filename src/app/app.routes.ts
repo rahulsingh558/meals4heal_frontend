@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
-import { adminGuard } from './guards/admin.guard';
 import { AddressSelectComponent } from './components/address-select/address-select.component';
 import { PaymentComponent } from './components/payment/payment.component';
 import { OrderSuccessComponent } from './components/order-success/order-success.component';
@@ -54,6 +53,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/contact/contact').then(m => m.Contact),
   },
+  {
+    path: 'help',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./pages/help/help').then(m => m.Help),
+  },
 
   /* ================= USER PROTECTED ================= */
   {
@@ -93,20 +98,7 @@ export const routes: Routes = [
   },
 
   /* ================= ADMIN ================= */
-  // 🔓 ADMIN LOGIN (NO GUARD)
-  {
-    path: 'admin/login',
-    loadComponent: () =>
-      import('./pages/admin/auth/admin-login').then(m => m.AdminLogin),
-  },
-
-  // 🔐 ADMIN AREA (WITH LAYOUT) - IMPORTANT: Admin routes come BEFORE wildcard
-
-  {
-    path: 'admin',
-    canActivate: [adminGuard],
-    loadChildren: () => import('./pages/admin/admin.routes').then(m => m.adminRoutes)
-  },
+  // Admin routes have been migrated to the standalone meals4heal_admin app.
 
   /* ================= DELIVERY TRACKING ================= */
   {

@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, Inject, PLATFORM_ID, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -12,7 +12,7 @@ import { CartService, Cart } from '../../services/cart.service';
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './address-select.component.html',
 })
-export class AddressSelectComponent implements OnInit {
+export class AddressSelectComponent implements OnInit, AfterViewInit, OnDestroy {
   addresses: Address[] = [];
   selectedAddressIndex: number | null = null;
   showAddressForm = false;
@@ -21,6 +21,10 @@ export class AddressSelectComponent implements OnInit {
   cartTotal = 0;
   isBrowser = false;
   isLoading = false;
+  isProceedButtonVisible = true;
+
+  @ViewChild('proceedButton') proceedButton?: ElementRef;
+  private observer?: IntersectionObserver;
 
   addressForm: FormGroup;
 
@@ -74,6 +78,7 @@ export class AddressSelectComponent implements OnInit {
     // Get cart total
     this.cartService.cart$.subscribe((cart: Cart) => {
       this.cartTotal = cart.total;
+      this.cdr.detectChanges();
     });
 
     // Load initially selected address
@@ -87,6 +92,25 @@ export class AddressSelectComponent implements OnInit {
           this.selectedAddressIndex = index;
         }
       }
+    }
+  }
+
+  ngAfterViewInit() {
+    if (this.isBrowser && this.proceedButton) {
+      this.observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          this.isProceedButtonVisible = entry.isIntersecting;
+          this.cdr.detectChanges();
+        });
+      }, { threshold: 0.1 });
+      
+      this.observer.observe(this.proceedButton.nativeElement);
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.observer) {
+      this.observer.disconnect();
     }
   }
 
