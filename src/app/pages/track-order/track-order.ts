@@ -143,7 +143,7 @@ export class TrackOrderPage implements OnInit, OnDestroy {
     setupSocketConnection() {
         if (!this.isBrowser || !this.order) return;
 
-        const url = environment.apiUrl.replace('/api', '');
+        const url = environment.backendUrl;
         console.log('🔗 Initializing socket connection to:', url);
 
         this.socket = io(url, {
