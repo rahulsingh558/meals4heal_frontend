@@ -220,12 +220,38 @@ export class MapplsService {
 
     addRiderMarker(coords: Coordinates): any {
         const riderHtml = `
-            <div style="transform: translate(-50%, -50%); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));">
-                <div style="background: linear-gradient(135deg, #2E7D32, #1B5E20); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(46, 125, 50, 0.5);">
-                    <span style="font-size: 24px;">🛵</span>
+            <style>
+                @keyframes pulse-ring {
+                    0% { transform: scale(0.8); opacity: 0.8; }
+                    100% { transform: scale(1.5); opacity: 0; }
+                }
+                @keyframes bounce-marker {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-3px); }
+                }
+            </style>
+            <div style="transform: translate(-50%, -50%); position: relative; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
+                <!-- Pulsing Background Ring -->
+                <div style="position: absolute; width: 100%; height: 100%; background: #4CAF50; border-radius: 50%; animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;"></div>
+                
+                <!-- Main Icon Container -->
+                <div style="position: relative; z-index: 2; background: linear-gradient(135deg, #1565C0, #0D47A1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 4px 12px rgba(13, 71, 161, 0.5); animation: bounce-marker 2s ease-in-out infinite;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19.5 15C19.5 16.933 17.933 18.5 16 18.5C14.067 18.5 12.5 16.933 12.5 15C12.5 13.067 14.067 11.5 16 11.5C17.933 11.5 19.5 13.067 19.5 15Z" fill="white"/>
+                        <path d="M7.5 15C7.5 16.933 5.933 18.5 4 18.5C2.067 18.5 0.5 16.933 0.5 15C0.5 13.067 2.067 11.5 4 11.5C5.933 11.5 7.5 13.067 7.5 15Z" fill="white"/>
+                        <path d="M16 13.5C16.8284 13.5 17.5 14.1716 17.5 15C17.5 15.8284 16.8284 16.5 16 16.5C15.1716 16.5 14.5 15.8284 14.5 15C14.5 14.1716 15.1716 13.5 16 13.5Z" fill="#1565C0"/>
+                        <path d="M4 13.5C4.82843 13.5 5.5 14.1716 5.5 15C5.5 15.8284 4.82843 16.5 4 16.5C3.17157 16.5 2.5 15.8284 2.5 15C2.5 14.1716 3.17157 13.5 4 13.5Z" fill="#1565C0"/>
+                        <path d="M11.9 6.20001L14.7 11.5H16.2L12.9 5.20001C12.5 4.50001 11.7 4 10.9 4H8.5V6H10.9L11.9 6.20001Z" fill="white"/>
+                        <path d="M16.5 9.5H8.5V11.5H16.5V9.5Z" fill="white"/>
+                        <path d="M8.5 7.5H4.5C3.9 7.5 3.5 8 3.5 8.5V11.5H5.5V9.5H8.5V7.5Z" fill="white"/>
+                        <path d="M19.5 9.5H17.5V11.5H19.5V9.5Z" fill="white"/>
+                        <path d="M14.5 4.5H21.5V6.5H14.5V4.5Z" fill="#FFC107"/>
+                    </svg>
                 </div>
-                <div style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #4CAF50; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; white-space: nowrap;">
-                    LIVE
+                
+                <!-- Live Tag -->
+                <div style="position: absolute; top: -12px; z-index: 3; background: #0D47A1; color: white; font-size: 10px; padding: 3px 8px; border-radius: 12px; font-weight: bold; white-space: nowrap; border: 1.5px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); text-transform: uppercase; letter-spacing: 0.5px;">
+                    Driver
                 </div>
             </div>
         `;
