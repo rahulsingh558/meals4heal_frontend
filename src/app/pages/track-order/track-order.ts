@@ -143,13 +143,18 @@ export class TrackOrderPage implements OnInit, OnDestroy {
     setupSocketConnection() {
         if (!this.isBrowser || !this.order) return;
 
-        this.socket = io(environment.apiUrl.replace('/api', ''), {
+        const url = environment.apiUrl.replace('/api', '');
+        console.log('🔗 Initializing socket connection to:', url);
+
+        this.socket = io(url, {
             transports: ['websocket', 'polling']
         });
 
         const joinRooms = () => {
             const cleanOrderNumber = this.order?.orderNumber?.toString().trim();
             const orderIdStr = this.order?._id?.toString().trim();
+            
+            console.log('🔗 Socket connected! Joining rooms for orderNumber:', cleanOrderNumber, 'and _id:', orderIdStr);
             
             if (cleanOrderNumber) {
                 this.socket?.emit('join-delivery', cleanOrderNumber);
@@ -160,11 +165,18 @@ export class TrackOrderPage implements OnInit, OnDestroy {
         };
 
         this.socket.on('connect', joinRooms);
+        
+        this.socket.on('connect_error', (err) => {
+            console.error('❌ Socket connection error:', err);
+        });
+
         if (this.socket.connected) {
+            console.log('🔗 Socket was already connected. Joining immediately.');
             joinRooms();
         }
 
         this.socket.on('location-update', (data: any) => {
+            console.log('📍 Received location-update:', data);
             if (data.lat && data.lng) {
                 this.isLiveTracking = true;
                 this.latestDeliveryLocation = { lat: Number(data.lat), lng: Number(data.lng) };
