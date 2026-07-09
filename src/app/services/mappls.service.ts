@@ -286,7 +286,14 @@ export class MapplsService {
 
         const renderRoute = (points: Coordinates[]) => {
             if (this.currentRoute) {
-                try { this.currentRoute.remove(); } catch(e) {}
+                try {
+                    const mapplsObj = (window as any).mappls;
+                    if (mapplsObj && mapplsObj.remove) {
+                        mapplsObj.remove({ map: this.mapObject, layer: this.currentRoute });
+                    } else {
+                        this.currentRoute.remove();
+                    }
+                } catch(e) {}
             }
             this.currentRoute = this.drawPolyline(points, color);
         };
@@ -423,8 +430,22 @@ export class MapplsService {
 
     destroyMap(): void {
         try {
-            this.markers.forEach(m => { try { m.remove(); } catch (e) { } });
-            this.polylines.forEach(p => { try { p.remove(); } catch (e) { } });
+            const mapplsObj = (window as any).mappls;
+            
+            this.markers.forEach(m => { 
+                try { 
+                    if (mapplsObj && mapplsObj.remove) mapplsObj.remove({ map: this.mapObject, layer: m });
+                    else m.remove(); 
+                } catch (e) { } 
+            });
+            
+            this.polylines.forEach(p => { 
+                try { 
+                    if (mapplsObj && mapplsObj.remove) mapplsObj.remove({ map: this.mapObject, layer: p });
+                    else p.remove(); 
+                } catch (e) { } 
+            });
+            
             if (this.mapObject) {
                 this.mapObject.remove();
             }
