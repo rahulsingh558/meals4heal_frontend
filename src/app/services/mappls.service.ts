@@ -25,6 +25,7 @@ export class MapplsService {
     private isBrowser: boolean;
     private markers: any[] = [];
     private polylines: any[] = [];
+    private currentRoute: any = null;
 
     readonly restaurantCoords: Coordinates = environment.mappls.restaurantCoords;
 
@@ -257,6 +258,11 @@ export class MapplsService {
     async drawActualRoute(start: Coordinates, end: Coordinates, color: string = '#2E7D32'): Promise<RouteInfo | null> {
         if (!this.mapObject) return null;
 
+        if (this.currentRoute) {
+            try { this.currentRoute.remove(); } catch(e) {}
+            this.currentRoute = null;
+        }
+
         const fallbackDistance = this.calculateDistance(start, end);
         const fallbackDuration = Math.round(fallbackDistance * 3);
         const fallbackInfo: RouteInfo = {
@@ -272,13 +278,21 @@ export class MapplsService {
 
             if (response && response.success && response.data && response.data.routes && response.data.routes.length > 0) {
                 const route = response.data.routes[0];
-                if (route.geometry && route.geometry.coordinates) {
-                    const routePoints = route.geometry.coordinates.map((coord: number[]) => ({
-                        lng: coord[0],
-                        lat: coord[1]
-                    }));
+                let routePoints: Coordinates[] = [];
 
-                    this.drawPolyline(routePoints, color);
+                if (route.geometry) {
+                    if (typeof route.geometry === 'string') {
+                        routePoints = this.decodePolyline(route.geometry);
+                    } else if (route.geometry.coordinates) {
+                        routePoints = route.geometry.coordinates.map((coord: number[]) => ({
+                            lng: coord[0],
+                            lat: coord[1]
+                        }));
+                    }
+                }
+
+                if (routePoints.length > 0) {
+                    this.currentRoute = this.drawPolyline(routePoints, color);
 
                     const distanceMeters = route.distance || 0;
                     const durationSeconds = route.duration || 0;
@@ -294,13 +308,37 @@ export class MapplsService {
                 }
             }
 
-            this.drawPolyline([start, end], color);
+            this.currentRoute = this.drawPolyline([start, end], color);
             return fallbackInfo;
         } catch (error) {
             console.error('Error fetching route:', error);
-            this.drawPolyline([start, end], color);
+            this.currentRoute = this.drawPolyline([start, end], color);
             return fallbackInfo;
         }
+    }
+
+    private decodePolyline(str: string, precision: number = 5): Coordinates[] {
+        let index = 0, lat = 0, lng = 0, coordinates: Coordinates[] = [], shift = 0, result = 0, byte = null, latitude_change, longitude_change, factor = Math.pow(10, precision);
+        while (index < str.length) {
+            byte = null; shift = 0; result = 0;
+            do {
+                byte = str.charCodeAt(index++) - 63;
+                result |= (byte & 0x1f) << shift;
+                shift += 5;
+            } while (byte >= 0x20);
+            latitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+            shift = result = 0;
+            do {
+                byte = str.charCodeAt(index++) - 63;
+                result |= (byte & 0x1f) << shift;
+                shift += 5;
+            } while (byte >= 0x20);
+            longitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+            lat += latitude_change;
+            lng += longitude_change;
+            coordinates.push({lat: lat / factor, lng: lng / factor});
+        }
+        return coordinates;
     }
 
     private calculateDistance(start: Coordinates, end: Coordinates): number {
