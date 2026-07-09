@@ -284,10 +284,12 @@ export class MapplsService {
     async drawActualRoute(start: Coordinates, end: Coordinates, color: string = '#2E7D32'): Promise<RouteInfo | null> {
         if (!this.mapObject) return null;
 
-        if (this.currentRoute) {
-            try { this.currentRoute.remove(); } catch(e) {}
-            this.currentRoute = null;
-        }
+        const renderRoute = (points: Coordinates[]) => {
+            if (this.currentRoute) {
+                try { this.currentRoute.remove(); } catch(e) {}
+            }
+            this.currentRoute = this.drawPolyline(points, color);
+        };
 
         const fallbackDistance = this.calculateDistance(start, end);
         const fallbackDuration = Math.round(fallbackDistance * 3);
@@ -318,7 +320,7 @@ export class MapplsService {
                 }
 
                 if (routePoints.length > 0) {
-                    this.currentRoute = this.drawPolyline(routePoints, color);
+                    renderRoute(routePoints);
 
                     const distanceMeters = route.distance || 0;
                     const durationSeconds = route.duration || 0;
@@ -334,11 +336,11 @@ export class MapplsService {
                 }
             }
 
-            this.currentRoute = this.drawPolyline([start, end], color);
+            renderRoute([start, end]);
             return fallbackInfo;
         } catch (error) {
             console.error('Error fetching route:', error);
-            this.currentRoute = this.drawPolyline([start, end], color);
+            renderRoute([start, end]);
             return fallbackInfo;
         }
     }
