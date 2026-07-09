@@ -79,7 +79,7 @@ export class Home implements AfterViewInit {
       description: 'Fresh moong beans packed with protein, vitamins, and refreshing crunch.',
       calories: '320 cal',
       ingredients: ['Moong', 'Cucumber', 'Tomato', 'Corn', 'Lemon Dressing'],
-      image: `${environment.backendUrl}/uploads/seed/Moong%20bowl.png`,
+      image: `${environment.backendUrl}/uploads/seed/Moong%20bowl.jpeg`,
       basePrice: 80
     },
     {
@@ -88,7 +88,7 @@ export class Home implements AfterViewInit {
       description: 'Healthy boiled eggs paired with a seasoned mix of crunchy, fresh vegetables.',
       calories: '320 cal',
       ingredients: ['Egg', 'Onion', 'Capsicum', 'Corn', 'Tomato', 'Lemon Dressing'],
-      image: `${environment.backendUrl}/uploads/seed/egg%20bowl.png`,
+      image: `${environment.backendUrl}/uploads/seed/egg%20bowl.jpeg`,
       basePrice: 110
     },
     {
@@ -97,7 +97,7 @@ export class Home implements AfterViewInit {
       description: 'Delicious air-fried paneer cubes tossed with perfectly roasted capsicum and crunchy onions.',
       calories: '430 cal',
       ingredients: ['Paneer', 'Capsicum', 'Tomato', 'Corn', 'Tomato', 'Lemon Dressing'],
-      image: `${environment.backendUrl}/uploads/seed/Air%20friedPaneer.png`,
+      image: `${environment.backendUrl}/uploads/seed/Air%20friedPaneer.jpeg`,
       basePrice: 170
     },
     {
@@ -106,7 +106,7 @@ export class Home implements AfterViewInit {
       description: 'Crispy, guilt-free air-fried chicken breast tenderly cooked with minimal oil.',
       calories: '480 cal',
       ingredients: ['Chicken Breast', 'Capsicum', 'Onion', 'Lemon Dressing'],
-      image: `${environment.backendUrl}/uploads/seed/Airfried%20chicken.png`,
+      image: `${environment.backendUrl}/uploads/seed/Airfried%20chicken.jpeg`,
       basePrice: 180
     }
   ];
@@ -118,25 +118,25 @@ export class Home implements AfterViewInit {
 
   testimonials: Testimonial[] = [
     {
-      name: 'Priya Sharma',
-      role: 'Fitness Trainer',
+      name: 'Ayushman',
+      role: 'Fitness Influencer',
       text: 'As a fitness trainer, I recommend meals4heal to all my clients. The protein bowls are perfectly balanced and help in muscle recovery.',
       rating: 5,
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop&crop=face'
+      avatar: `${environment.backendUrl}/uploads/review/ayushman.jpg`
     },
     {
-      name: 'Rohan Mehta',
+      name: 'Puneet',
       role: 'IT Professional',
       text: 'Working long hours made healthy eating tough. Now with meals4heal, I get nutritious meals delivered. Lost 5kg in 2 months!',
       rating: 5,
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face'
+      avatar: `${environment.backendUrl}/uploads/review/puneet.jpg`
     },
     {
-      name: 'Ananya Reddy',
+      name: 'Lalit Kr Choudhary',
       role: 'Nutritionist',
       text: 'The quality of ingredients and nutritional balance is impressive. My patients love the variety and taste while staying healthy.',
       rating: 4,
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face'
+      avatar: `${environment.backendUrl}/uploads/review/lalit.jpg`
     }
   ];
 

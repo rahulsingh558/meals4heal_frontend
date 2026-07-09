@@ -227,7 +227,8 @@
 
           <div class="flex justify-between text-gray-600">
             <span>Delivery Charge</span>
-            <span class="text-green-600">FREE</span>
+            <span *ngIf="getDeliveryCharge() === 0" class="text-green-600">FREE</span>
+            <span *ngIf="getDeliveryCharge() > 0">₹{{ getDeliveryCharge() | number:'1.2-2' }}</span>
           </div>
 
           <div class="flex justify-between text-gray-600">

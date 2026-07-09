@@ -6,8 +6,8 @@
     <a
       routerLink="/"
       (click)="scrollToTop(); closeMobileMenu()"
-      class="text-green-600 font-bold text-lg">
-      meals4heal
+      class="flex items-center gap-2">
+      <img [src]="logoUrl" alt="meals4heal logo" class="h-[60px] w-auto object-contain">
     </a>
 
     <!-- DESKTOP NAV -->
@@ -105,14 +105,6 @@
                 <span>Help & Chat Support</span>
               </a>
               
-              <a 
-                routerLink="/help" 
-                (click)="closeProfileMenu()"
-                class="flex items-center gap-3 px-6 py-4 hover:bg-green-50 transition-colors group">
-                <span class="text-indigo-500 group-hover:scale-110 transition-transform">💬</span>
-                <span>Help & Chat Support</span>
-              </a>
-              
               <div class="border-t my-2"></div>
               
               <button
@@ -156,13 +148,6 @@
                 class="flex items-center gap-3 px-6 py-4 hover:bg-green-50 transition-colors group">
                 <span class="text-purple-500 group-hover:scale-110 transition-transform">📞</span>
                 <span>Contact Us</span>
-              </a>
-              <a 
-                routerLink="/help" 
-                (click)="closeProfileMenu()"
-                class="flex items-center gap-3 px-6 py-4 hover:bg-green-50 transition-colors group">
-                <span class="text-indigo-500 group-hover:scale-110 transition-transform">💬</span>
-                <span>Help & Chat Support</span>
               </a>
               <a 
                 routerLink="/help" 

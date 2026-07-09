@@ -17,6 +17,7 @@ export class Wishlist {
     id: number;
     name: string;
     basePrice: number;
+    image?: string;
   }[] = [];
 
   constructor(
@@ -39,10 +40,12 @@ export class Wishlist {
     id: number;
     name: string;
     basePrice: number;
+    image?: string;
   }) {
     this.cartService.addToCart({
       menuItemId: String(item.id),
       name: item.name,
+      image: item.image,
       price: item.basePrice,
       quantity: 1,
       customizations: [],

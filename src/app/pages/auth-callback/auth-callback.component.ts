@@ -1,6 +1,7 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
+import { CartService } from '../../services/cart.service';
 
 @Component({
     selector: 'app-auth-callback',
@@ -19,6 +20,7 @@ export class AuthCallbackComponent implements OnInit {
     constructor(
         private route: ActivatedRoute,
         private router: Router,
+        private cartService: CartService,
         @Inject(PLATFORM_ID) private platformId: Object
     ) { }
 
@@ -48,11 +50,17 @@ export class AuthCallbackComponent implements OnInit {
                     localStorage.setItem('userData', JSON.stringify(userData));
                     localStorage.setItem('isLoggedIn', 'true');
 
-                    if (role === 'admin') {
-                        this.router.navigate(['/admin']);
-                    } else {
-                        this.router.navigate(['/menu']);
-                    }
+                    this.cartService.migrateGuestCart().subscribe({
+                        next: () => console.log('Cart migrated after Google Auth'),
+                        error: (err) => console.error('Error migrating cart:', err),
+                        complete: () => {
+                            if (role === 'admin') {
+                                this.router.navigate(['/admin']);
+                            } else {
+                                this.router.navigate(['/menu']);
+                            }
+                        }
+                    });
                 } else {
                     this.router.navigate(['/login'], { queryParams: { error: 'auth_failed' } });
                 }

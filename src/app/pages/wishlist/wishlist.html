@@ -36,13 +36,16 @@
       class="bg-white rounded-xl shadow p-4 mb-4
              flex justify-between items-center"
     >
-      <div>
-        <h3 class="font-semibold text-green-700">
-          {{ item.name }}
-        </h3>
-        <p class="text-sm text-gray-500">
-          ₹{{ item.basePrice }}
-        </p>
+      <div class="flex items-center gap-4">
+        <img *ngIf="item.image" [src]="item.image" alt="{{ item.name }}" class="w-16 h-16 object-cover rounded-md" />
+        <div>
+          <h3 class="font-semibold text-green-700">
+            {{ item.name }}
+          </h3>
+          <p class="text-sm text-gray-500">
+            ₹{{ item.basePrice }}
+          </p>
+        </div>
       </div>
 
       <div class="flex gap-3">

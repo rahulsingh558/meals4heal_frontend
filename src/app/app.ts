@@ -1,4 +1,4 @@
-import { Component, Inject, PLATFORM_ID, OnInit, OnDestroy } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterOutlet, NavigationEnd, RouterLink } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { filter } from 'rxjs/operators';
@@ -57,6 +57,7 @@ export class App implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private cartService: CartService,
+    private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
@@ -66,7 +67,7 @@ export class App implements OnInit, OnDestroy {
         .pipe(filter(event => event instanceof NavigationEnd))
         .subscribe((event: NavigationEnd) => {
           const url = event.urlAfterRedirects;
-          const hideLayoutRoutes = ['/admin', '/login', '/signup', '/register', '/auth', '/forgot-password', '/delivery-tracking', '/track-order'];
+          const hideLayoutRoutes = ['/admin', '/login', '/signup', '/register', '/auth', '/forgot-password', '/track-order'];
           this.showLayout = !hideLayoutRoutes.some(route => url.startsWith(route));
           
           const hideCartIconRoutes = ['/cart', '/checkout', '/address-select', '/payment'];
@@ -79,6 +80,7 @@ export class App implements OnInit, OnDestroy {
     if (this.isBrowser) {
       this.cartSub = this.cartService.cart$.subscribe((cart: Cart) => {
         this.cartItemCount = cart.itemCount;
+        this.cdr.detectChanges();
       });
     }
   }

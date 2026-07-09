@@ -239,7 +239,7 @@ export class Checkout implements OnInit {
   }
 
   getDeliveryCharge(): number {
-    return 0; // Free delivery
+    return this.getGrandTotal() < 299 ? 40 : 0;
   }
 
   getGst(): number {

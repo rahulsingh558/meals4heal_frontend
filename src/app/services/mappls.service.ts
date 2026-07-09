@@ -349,11 +349,10 @@ export class MapplsService {
 
     updateDeliveryMarker(coords: Coordinates): void {
         if (this.deliveryMarker) {
-            try {
-                this.deliveryMarker.remove();
-            } catch (e) { }
+            this.updateMarkerPosition(this.deliveryMarker, coords);
+        } else {
+            this.deliveryMarker = this.addRiderMarker(coords);
         }
-        this.deliveryMarker = this.addRiderMarker(coords);
     }
 
     destroyMap(): void {

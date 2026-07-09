@@ -143,13 +143,14 @@ export class TrackOrderPage implements OnInit, OnDestroy {
         });
 
         this.socket.on('connect', () => {
-            this.socket?.emit('tracking:join', { orderId: this.order?.orderNumber });
+            const cleanOrderNumber = this.order?.orderNumber?.toString().trim();
+            this.socket?.emit('join-delivery', cleanOrderNumber);
         });
 
-        this.socket.on('delivery:position', (data: any) => {
+        this.socket.on('location-update', (data: any) => {
             if (data.lat && data.lng) {
                 this.isLiveTracking = true;
-                this.updateDeliveryLocation(data.lat, data.lng);
+                this.updateDeliveryLocation(Number(data.lat), Number(data.lng));
             }
         });
 

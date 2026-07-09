@@ -1,5 +1,6 @@
 import { Component, Inject, PLATFORM_ID, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { CartService, CartItem } from '../../services/cart.service';
 import { FoodApiService, ApiFood } from '../../services/food-api.service';
 import { Subscription } from 'rxjs';
@@ -28,7 +29,7 @@ interface MenuFood extends Food {
 @Component({
   standalone: true,
   selector: 'app-menu',
-  imports: [CommonModule, FontAwesomeModule],
+  imports: [CommonModule, FontAwesomeModule, RouterLink],
   templateUrl: './menu.html',
 })
 export class Menu implements OnInit, OnDestroy {
@@ -47,6 +48,13 @@ export class Menu implements OnInit, OnDestroy {
   modalSelectedFreeAddons: Addon[] = [];
   modalSelectedPremiumAddons: Addon[] = [];
   modalTotal = 0;
+
+  /* =========================
+     REPEAT MODAL STATE
+  ========================== */
+  showRepeatModal = false;
+  foodToRepeat: MenuFood | null = null;
+  lastCartItemToRepeat: CartItem | null = null;
 
   /* =========================
      WISHLIST & CART STATE
@@ -178,26 +186,8 @@ export class Menu implements OnInit, OnDestroy {
     return this.modalSelectedPremiumAddons.some(a => a.id === id);
   }
 
-  addonImageMap: Record<string, string> = {
-    'Onion': 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=200&q=80',
-    'Tomato': 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=200&q=80',
-    'Cucumber': 'https://images.unsplash.com/photo-1604977042946-1eecc30f269e?w=200&q=80',
-    'Lemon': 'https://images.unsplash.com/photo-1609951651556-5334e2706168?w=200&q=80',
-    'Coriander': 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=200&q=80',
-    'Sweet Corn': 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=200&q=80',
-    'Broccoli': 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=200&q=80',
-    'Beans': 'https://images.unsplash.com/photo-1593467664654-2098b64e03d3?w=200&q=80',
-    'Peas': 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?w=200&q=80',
-    'Capsicum': 'https://images.unsplash.com/photo-1563514227147-6d2ff665a6a0?w=200&q=80',
-    'Cheese': 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=200&q=80',
-    'Mushroom': 'https://images.unsplash.com/photo-1511688878353-3a2f5be94cd7?w=200&q=80'
-  };
-
   getAddonImage(name: string) {
-    if (this.addonImageMap[name]) {
-      return this.addonImageMap[name];
-    }
-    const fileName = name.toLowerCase().replace(/ /g, '-') + '.jpg';
+    const fileName = name.toLowerCase().replace(/ /g, '-') + '.jpeg';
     return `${environment.backendUrl}/uploads/addons/${fileName}`;
   }
 
@@ -225,6 +215,12 @@ export class Menu implements OnInit, OnDestroy {
     return this.cartItems.some(item => item.menuItemId === String(foodId));
   }
 
+  getFoodQuantity(foodId: any): number {
+    return this.cartItems
+      .filter(item => item.menuItemId === String(foodId))
+      .reduce((sum, item) => sum + item.quantity, 0);
+  }
+
   removeFromCart(foodId: any, event: Event) {
     if (event) {
       event.stopPropagation();
@@ -236,6 +232,85 @@ export class Menu implements OnInit, OnDestroy {
       next: (res: any) => console.log('Removed from cart', res),
       error: (err: any) => console.error('Error removing from cart', err)
     });
+  }
+
+  incrementFood(food: MenuFood, event: Event) {
+    if (event) event.stopPropagation();
+    
+    const itemsForFood = this.cartItems.filter(item => item.menuItemId === String(food.id));
+    if (itemsForFood.length > 0) {
+      this.lastCartItemToRepeat = itemsForFood[itemsForFood.length - 1];
+      this.foodToRepeat = food;
+      this.showRepeatModal = true;
+      if (this.isBrowser) {
+        document.body.style.overflow = 'hidden';
+      }
+    } else {
+      this.openAddonPopup(food);
+    }
+  }
+
+  decrementFood(food: MenuFood, event: Event) {
+    if (event) event.stopPropagation();
+    
+    const itemsForFood = this.cartItems.filter(item => item.menuItemId === String(food.id));
+    if (itemsForFood.length > 0) {
+      const lastItem = itemsForFood[itemsForFood.length - 1];
+      const idToUpdate = lastItem._id || lastItem.menuItemId;
+      
+      if (lastItem.quantity > 1) {
+        this.cartService.updateQuantity(idToUpdate, lastItem.quantity - 1).subscribe({
+          next: (res: any) => console.log('Decremented quantity', res),
+          error: (err: any) => console.error('Error decrementing quantity', err)
+        });
+      } else {
+        this.cartService.removeItem(idToUpdate).subscribe({
+          next: (res: any) => console.log('Removed from cart', res),
+          error: (err: any) => console.error('Error removing from cart', err)
+        });
+      }
+    }
+  }
+
+  closeRepeatModal() {
+    this.showRepeatModal = false;
+    this.foodToRepeat = null;
+    this.lastCartItemToRepeat = null;
+    if (this.isBrowser) {
+      document.body.style.overflow = '';
+    }
+  }
+
+  repeatLastCustomization() {
+    if (this.foodToRepeat && this.lastCartItemToRepeat) {
+      // For repeat customization, we add a new variation with the same customizations,
+      // or if cartService groups them, it will increment the quantity of the matching item.
+      this.cartService.addToCart({
+        menuItemId: String(this.foodToRepeat.id),
+        name: this.foodToRepeat.name,
+        image: this.foodToRepeat.image,
+        price: this.lastCartItemToRepeat.price, // Uses the same total price
+        quantity: 1,
+        customizations: [...(this.lastCartItemToRepeat.customizations || [])]
+      }).subscribe({
+        next: (res: any) => console.log('Added to cart via repeat', res),
+        error: (err: any) => console.error('Error adding to cart', err)
+      });
+    }
+    this.closeRepeatModal();
+  }
+
+  makeNewCustomization() {
+    if (this.foodToRepeat) {
+      const food = this.foodToRepeat;
+      this.closeRepeatModal();
+      this.openAddonPopup(food);
+    }
+  }
+
+  formatCustomizations(customizations: any[] | undefined): string {
+    if (!customizations || customizations.length === 0) return 'No addons selected';
+    return customizations.map(c => c.name).join(', ');
   }
 
   /* =========================
@@ -287,6 +362,7 @@ export class Menu implements OnInit, OnDestroy {
     this.cartService.addToCart({
       menuItemId: String(this.selectedFood.id),
       name: this.selectedFood.name,
+      image: this.selectedFood.image,
       price: this.modalTotal,
       quantity: 1,
       customizations: [...this.modalSelectedFreeAddons, ...this.modalSelectedPremiumAddons]

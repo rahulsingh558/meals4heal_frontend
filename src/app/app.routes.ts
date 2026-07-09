@@ -20,6 +20,11 @@ export const routes: Routes = [
       import('./pages/menu/menu').then(m => m.Menu),
   },
   {
+    path: 'build-bowl',
+    loadComponent: () =>
+      import('./pages/build-bowl/build-bowl').then(m => m.BuildBowl),
+  },
+  {
     path: 'cart',
     loadComponent: () =>
       import('./pages/cart/cart').then(m => m.CartPage),
@@ -101,11 +106,7 @@ export const routes: Routes = [
   // Admin routes have been migrated to the standalone meals4heal_admin app.
 
   /* ================= DELIVERY TRACKING ================= */
-  {
-    path: 'delivery-tracking',
-    loadComponent: () =>
-      import('./pages/delivery-tracking/delivery-tracking').then(m => m.DeliveryTrackingPage),
-  },
+  /* ================= DELIVERY TRACKING ================= */
   {
     path: 'track-order/:id',
     canActivate: [authGuard],

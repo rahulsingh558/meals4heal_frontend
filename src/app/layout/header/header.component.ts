@@ -3,6 +3,8 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 import { CartService } from '../../services/cart.service';
+import { AuthService } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   standalone: true,
@@ -45,9 +47,11 @@ export class HeaderComponent {
   cartCount = 0;
   isBrowser = false;
   currentYear = new Date().getFullYear();
+  logoUrl = `${environment.backendUrl}/uploads/logo.jpeg`;
 
   constructor(
     private cartService: CartService,
+    private authService: AuthService,
     private router: Router,
     @Inject(PLATFORM_ID) platformId: Object,
     private cdr: ChangeDetectorRef
@@ -108,7 +112,7 @@ export class HeaderComponent {
 
   isLoggedIn(): boolean {
     if (!this.isBrowser) return false;
-    return localStorage.getItem('isLoggedIn') === 'true';
+    return this.authService.isAuthenticated();
   }
 
   getUserName(): string | null {
@@ -123,8 +127,7 @@ export class HeaderComponent {
 
   logout() {
     if (!this.isBrowser) return;
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userName');
+    this.authService.logout();
     this.closeProfileMenu();
     this.closeMobileMenu();
     this.router.navigate(['/login']);

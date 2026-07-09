@@ -1,4 +1,4 @@
-import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID, NgZone } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { io, Socket } from 'socket.io-client';
 import { Observable } from 'rxjs';
@@ -12,7 +12,10 @@ export class WebSocketService {
     private readonly URL = environment.backendUrl;
     private isBrowser: boolean;
 
-    constructor(@Inject(PLATFORM_ID) platformId: Object) {
+    constructor(
+        @Inject(PLATFORM_ID) platformId: Object,
+        private ngZone: NgZone
+    ) {
         this.isBrowser = isPlatformBrowser(platformId);
         if (this.isBrowser) {
             this.socket = io(this.URL);
@@ -23,7 +26,9 @@ export class WebSocketService {
         return new Observable((subscriber) => {
             if (this.socket) {
                 this.socket.on(eventName, (data) => {
-                    subscriber.next(data);
+                    this.ngZone.run(() => {
+                        subscriber.next(data);
+                    });
                 });
             }
         });

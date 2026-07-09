@@ -262,6 +262,42 @@ export class AddressSelectComponent implements OnInit, AfterViewInit, OnDestroy 
     });
   }
 
+  onPhoneInput(event: any) {
+    let value = event.target.value.replace(/[^0-9]/g, '').substring(0, 10);
+    if (event.target.value !== value) {
+      event.target.value = value;
+      this.addressForm.patchValue({ phone: value });
+    }
+  }
+
+  onPincodeInput(event: any) {
+    let value = event.target.value.replace(/[^0-9]/g, '').substring(0, 6);
+    if (event.target.value !== value) {
+      event.target.value = value;
+      this.addressForm.patchValue({ pincode: value });
+    }
+    
+    if (value.length === 6) {
+      this.fetchLocationFromPincode(value);
+    }
+  }
+
+  fetchLocationFromPincode(pincode: string) {
+    fetch(`https://api.postalpincode.in/pincode/${pincode}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data[0] && data[0].Status === 'Success') {
+          const postOffice = data[0].PostOffice[0];
+          this.addressForm.patchValue({
+            city: postOffice.District,
+            state: postOffice.State
+          });
+          this.cdr.detectChanges();
+        }
+      })
+      .catch(err => console.error('Error fetching pincode details:', err));
+  }
+
   // Get formatted address string
   getFormattedAddress(address: Address): string {
     let parts = [
