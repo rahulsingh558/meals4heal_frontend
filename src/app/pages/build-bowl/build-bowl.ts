@@ -10,6 +10,8 @@ export interface Ingredient {
   name: string;
   price: number;
   description?: string;
+  protein?: number;
+  calories?: number;
   category: 'base' | 'protein' | 'veggies' | 'dressing' | 'crunch';
   isPremium?: boolean;
 }
@@ -43,16 +45,16 @@ export class BuildBowl implements OnInit {
 
   ingredients: Ingredient[] = [
     // Bases
-    { id: 'b1', name: 'Moong Sprouts', price: 25, description: '50g raw moong', category: 'base' },
-    { id: 'b2', name: 'Chana Sprouts', price: 22, description: '50g raw chana', category: 'base' },
-    { id: 'b3', name: 'Soyabean Sprouts', price: 33, description: '50g raw soyabean', category: 'base' },
-    { id: 'b4', name: 'Mix Sprouts', price: 60, description: '100g mixed', category: 'base' },
+    { id: 'b1', name: 'Moong Sprouts', price: 30, description: '50g raw moong', protein: 12, calories: 174, category: 'base' },
+    { id: 'b2', name: 'Chana Sprouts', price: 27, description: '50g raw chana', protein: 10, calories: 182, category: 'base' },
+    { id: 'b3', name: 'Soyabean Sprouts', price: 38, description: '50g raw soyabean', protein: 18, calories: 223, category: 'base' },
+    { id: 'b4', name: 'Mix Sprouts', price: 70, description: '100g mixed', category: 'base' },
 
     // Proteins
-    { id: 'p1', name: 'Boiled Egg', price: 20, description: '2 whole eggs', category: 'protein' },
-    { id: 'p2', name: 'Paneer', price: 70, description: '50g raw paneer', category: 'protein', isPremium: true },
-    { id: 'p3', name: 'Air Fried Chicken', price: 90, description: '150g raw chicken', category: 'protein', isPremium: true },
-    { id: 'p4', name: 'Tofu', price: 35, description: '50g raw tofu', category: 'protein', isPremium: true },
+    { id: 'p1', name: 'Boiled Egg', price: 20, description: '2 whole eggs', protein: 12, calories: 144, category: 'protein' },
+    { id: 'p2', name: 'Paneer', price: 70, description: '50g raw paneer', protein: 8, calories: 135, category: 'protein', isPremium: true },
+    { id: 'p3', name: 'Air Fried Chicken', price: 90, description: '150g raw chicken', protein: 34, calories: 180, category: 'protein', isPremium: true },
+    { id: 'p4', name: 'Tofu', price: 35, description: '50g raw tofu', protein: 7.8, calories: 76, category: 'protein', isPremium: true },
 
     // Veggies
     { id: 'v1', name: 'Onion', price: 5, category: 'veggies' },
@@ -69,9 +71,9 @@ export class BuildBowl implements OnInit {
     { id: 'd4', name: 'Peri Peri Powder', price: 1, category: 'dressing' },
 
     // Crunch
-    { id: 'c1', name: 'Peanuts', price: 10, description: '25g', category: 'crunch', isPremium: true },
-    { id: 'c2', name: 'Pumpkin Seeds', price: 15, description: '10g', category: 'crunch', isPremium: true },
-    { id: 'c3', name: 'Chia Seeds', price: 15, description: '20g', category: 'crunch', isPremium: true }
+    { id: 'c1', name: 'Peanuts', price: 10, description: '25g', protein: 7, calories: 142, category: 'crunch', isPremium: true },
+    { id: 'c2', name: 'Pumpkin Seeds', price: 15, description: '10g', protein: 2, calories: 56, category: 'crunch', isPremium: true },
+    { id: 'c3', name: 'Chia Seeds', price: 15, description: '20g', protein: 3, calories: 97, category: 'crunch', isPremium: true }
   ];
 
   selectedIngredientIds: Set<string> = new Set();
@@ -153,6 +155,22 @@ export class BuildBowl implements OnInit {
     let total = this.basePrice;
     this.selectedIngredientsOrder.forEach(i => {
       total += i.price * this.getQuantity(i);
+    });
+    return total;
+  }
+
+  get totalProtein(): number {
+    let total = 0;
+    this.selectedIngredientsOrder.forEach(i => {
+      total += (i.protein || 0) * this.getQuantity(i);
+    });
+    return total;
+  }
+
+  get totalCalories(): number {
+    let total = 0;
+    this.selectedIngredientsOrder.forEach(i => {
+      total += (i.calories || 0) * this.getQuantity(i);
     });
     return total;
   }

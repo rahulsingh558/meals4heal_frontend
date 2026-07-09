@@ -151,6 +151,8 @@ export class Menu implements OnInit, OnDestroy {
       name: food.name,
       subtitle: food.subtitle,
       basePrice: food.basePrice,
+      calories: food.calories,
+      protein: food.protein,
       category: food.category as 'sprouts' | 'airfried',
       type: food.type,
       image: `${environment.backendUrl}${food.image}`,

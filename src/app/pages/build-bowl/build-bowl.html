@@ -53,6 +53,12 @@
                   <div class="flex-1">
                     <div class="font-semibold text-slate-800 group-hover:text-green-700 transition-colors">{{ item.name }}</div>
                     <div class="text-xs text-slate-500 mt-0.5" *ngIf="item.description">{{ item.description }}</div>
+                    
+                    <div class="flex gap-2 mt-1.5 mb-0.5" *ngIf="item.protein || item.calories">
+                      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100" *ngIf="item.protein">{{ item.protein }}g Protein</span>
+                      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 border border-orange-100" *ngIf="item.calories">{{ item.calories }} kcal</span>
+                    </div>
+
                     <div class="text-sm font-medium mt-1"
                          [ngClass]="item.price > 0 ? 'text-purple-600' : 'text-green-600'">
                       {{ item.price > 0 ? '+₹' + item.price : 'Free' }}
@@ -155,6 +161,18 @@
                 </span>
                 <span class="font-medium text-slate-700" *ngIf="item.price > 0">+₹{{ item.price }}</span>
                 <span class="text-green-500 font-medium text-xs" *ngIf="item.price === 0">Free</span>
+              </div>
+            </div>
+
+            <!-- MACRO SUMMARY -->
+            <div class="flex items-center gap-4 mb-5" *ngIf="totalProtein > 0 || totalCalories > 0">
+              <div class="flex-1 bg-blue-50/70 rounded-xl p-3 border border-blue-100 flex flex-col items-center">
+                <span class="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-0.5">Protein</span>
+                <span class="text-xl font-black text-blue-700">{{ totalProtein | number:'1.0-1' }}g</span>
+              </div>
+              <div class="flex-1 bg-orange-50/70 rounded-xl p-3 border border-orange-100 flex flex-col items-center">
+                <span class="text-[10px] text-orange-600 font-bold uppercase tracking-wider mb-0.5">Calories</span>
+                <span class="text-xl font-black text-orange-700">{{ totalCalories | number:'1.0-1' }} kcal</span>
               </div>
             </div>
 

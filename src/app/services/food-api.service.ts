@@ -15,6 +15,7 @@ export interface ApiFood {
   subtitle: string;
   basePrice: number;
   calories: number;
+  protein?: number;
   type: 'veg' | 'egg' | 'nonveg';
   category: string;
   image: string;

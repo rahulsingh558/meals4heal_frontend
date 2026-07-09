@@ -69,27 +69,6 @@
     <!-- MENU GRID -->
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
-      <!-- BUILD YOUR BOWL CARD -->
-      <div class="bg-gradient-to-br from-green-500 to-emerald-700 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col overflow-hidden border border-green-400 relative cursor-pointer group h-full"
-           routerLink="/build-bowl">
-        
-        <!-- DECORATION -->
-        <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500"></div>
-        <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-black/10 rounded-full blur-2xl group-hover:bg-black/20 transition-all duration-500"></div>
-
-        <div class="p-6 flex flex-col flex-1 h-[400px] items-center justify-center text-center z-10">
-          <div class="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300 drop-shadow-md">🥗</div>
-          <h3 class="text-3xl font-extrabold text-white mb-3 drop-shadow-sm">Build Your Bowl</h3>
-          <p class="text-green-50 text-sm mb-8 font-medium max-w-[200px] leading-relaxed">
-            Customize every layer of your meal with fresh ingredients.
-          </p>
-          
-          <button class="bg-white text-green-700 font-bold px-6 py-3 rounded-xl shadow-md group-hover:shadow-lg transition-all w-full flex items-center justify-center gap-2 mt-auto">
-            <span>Start Building</span>
-            <span class="text-xl leading-none">&rarr;</span>
-          </button>
-        </div>
-      </div>
 
       <div *ngFor="let food of filteredFoods"
            class="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col overflow-hidden border border-gray-100">
@@ -128,6 +107,12 @@
               <p class="text-sm text-gray-500 mb-2">
                 {{ food.subtitle }}
               </p>
+              
+              <!-- MACROS -->
+              <div class="flex gap-2 mb-3" *ngIf="food.protein || food.calories">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-100 flex items-center shadow-sm" *ngIf="food.protein">{{ food.protein }}g Protein</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-50 text-orange-600 border border-orange-100 flex items-center shadow-sm" *ngIf="food.calories">{{ food.calories }} kcal</span>
+              </div>
               
               <!-- QUICK ADDONS INFO -->
               <div class="flex flex-wrap gap-1 mb-3">
@@ -219,6 +204,28 @@
             </div>
           </div>
 
+        </div>
+      </div>
+
+      <!-- BUILD YOUR BOWL CARD -->
+      <div class="bg-gradient-to-br from-green-500 to-emerald-700 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col overflow-hidden border border-green-400 relative cursor-pointer group h-full"
+           routerLink="/build-bowl">
+        
+        <!-- DECORATION -->
+        <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500"></div>
+        <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-black/10 rounded-full blur-2xl group-hover:bg-black/20 transition-all duration-500"></div>
+
+        <div class="p-6 flex flex-col flex-1 h-[400px] items-center justify-center text-center z-10">
+          <div class="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300 drop-shadow-md">🥗</div>
+          <h3 class="text-3xl font-extrabold text-white mb-3 drop-shadow-sm">Build Your Bowl</h3>
+          <p class="text-green-50 text-sm mb-8 font-medium max-w-[200px] leading-relaxed">
+            Customize every layer of your meal with fresh ingredients.
+          </p>
+          
+          <button class="bg-white text-green-700 font-bold px-6 py-3 rounded-xl shadow-md group-hover:shadow-lg transition-all w-full flex items-center justify-center gap-2 mt-auto">
+            <span>Start Building</span>
+            <span class="text-xl leading-none">&rarr;</span>
+          </button>
         </div>
       </div>
 

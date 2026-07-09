@@ -26,6 +26,7 @@ export class TrackOrderPage implements OnInit, OnDestroy {
     mapInitialized = false;
     deliveryAddressCoords: Coordinates | null = null;
     routeInfo: RouteInfo | null = null;
+    latestDeliveryLocation: { lat: number, lng: number } | null = null;
 
     constructor(
         private route: ActivatedRoute,
@@ -107,6 +108,10 @@ export class TrackOrderPage implements OnInit, OnDestroy {
 
             this.deliveryProgress = this.mapplsService.getDeliveryProgress(this.order.orderStatus);
 
+            if (this.latestDeliveryLocation) {
+                this.updateDeliveryLocation(this.latestDeliveryLocation.lat, this.latestDeliveryLocation.lng);
+            }
+
             this.cdr.detectChanges();
         } catch (error) {
             console.error('Error initializing map:', error);
@@ -142,15 +147,30 @@ export class TrackOrderPage implements OnInit, OnDestroy {
             transports: ['websocket', 'polling']
         });
 
-        this.socket.on('connect', () => {
+        const joinRooms = () => {
             const cleanOrderNumber = this.order?.orderNumber?.toString().trim();
-            this.socket?.emit('join-delivery', cleanOrderNumber);
-        });
+            const orderIdStr = this.order?._id?.toString().trim();
+            
+            if (cleanOrderNumber) {
+                this.socket?.emit('join-delivery', cleanOrderNumber);
+            }
+            if (orderIdStr && orderIdStr !== cleanOrderNumber) {
+                this.socket?.emit('join-delivery', orderIdStr);
+            }
+        };
+
+        this.socket.on('connect', joinRooms);
+        if (this.socket.connected) {
+            joinRooms();
+        }
 
         this.socket.on('location-update', (data: any) => {
             if (data.lat && data.lng) {
                 this.isLiveTracking = true;
-                this.updateDeliveryLocation(Number(data.lat), Number(data.lng));
+                this.latestDeliveryLocation = { lat: Number(data.lat), lng: Number(data.lng) };
+                if (this.mapInitialized) {
+                    this.updateDeliveryLocation(Number(data.lat), Number(data.lng));
+                }
             }
         });
 
