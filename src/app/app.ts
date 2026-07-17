@@ -6,9 +6,9 @@ import { Subscription } from 'rxjs';
 
 import { HeaderComponent } from './layout/header/header.component';
 import { FooterComponent } from './layout/footer/footer.component';
-import { ChatWidgetComponent } from './components/chat/chat.component';
 import { ToastComponent } from './components/toast/toast.component';
 import { CartService, Cart } from './services/cart.service';
+import { ToastService } from './services/toast.service';
 
 import { provideHttpClient } from '@angular/common/http';
 
@@ -25,7 +25,6 @@ export const appConfig = {
     RouterLink,
     HeaderComponent,
     FooterComponent,
-    ChatWidgetComponent,
     ToastComponent,
   ],
   template: `
@@ -58,6 +57,7 @@ export class App implements OnInit, OnDestroy {
     private router: Router,
     private cartService: CartService,
     private cdr: ChangeDetectorRef,
+    private toastService: ToastService,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
@@ -82,6 +82,44 @@ export class App implements OnInit, OnDestroy {
         this.cartItemCount = cart.itemCount;
         this.cdr.detectChanges();
       });
+      
+      this.checkLocationServiceability();
+    }
+  }
+
+  private checkLocationServiceability() {
+    if (sessionStorage.getItem('locationChecked') === 'true') {
+      return;
+    }
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          
+          fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
+            .then(res => res.json())
+            .then(data => {
+              sessionStorage.setItem('locationChecked', 'true');
+              const city = data.city || data.locality || '';
+              
+              if (city.toLowerCase().includes('bangalore') || city.toLowerCase().includes('bengaluru')) {
+                this.toastService.success('Service Available!', `Great! We deliver hot & fresh meals to ${city}.`);
+              } else {
+                this.toastService.info('Location Update', `We currently don't serve in ${city || 'your area'}. But we are expanding soon!`);
+              }
+            })
+            .catch(err => {
+              console.error('Error fetching location data', err);
+              sessionStorage.setItem('locationChecked', 'true');
+            });
+        },
+        (error) => {
+          console.error('Geolocation error', error);
+          sessionStorage.setItem('locationChecked', 'true');
+        }
+      );
     }
   }
 

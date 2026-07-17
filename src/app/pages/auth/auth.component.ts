@@ -1,6 +1,6 @@
 import { Component, ViewChildren, QueryList, ElementRef, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule, isPlatformBrowser, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CartService } from '../../services/cart.service';
 import { AuthService } from '../../services/auth.service';
@@ -57,9 +57,14 @@ export class AuthComponent implements OnInit {
         private cartService: CartService,
         private authService: AuthService,
         private cd: ChangeDetectorRef,
+        private location: Location,
         @Inject(PLATFORM_ID) platformId: Object
     ) {
         this.isBrowser = isPlatformBrowser(platformId);
+    }
+
+    goBack() {
+        this.location.back();
     }
 
     ngOnInit() {

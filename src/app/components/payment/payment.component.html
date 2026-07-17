@@ -188,24 +188,7 @@
           </div>
         </div>
 
-        <!-- PAY NOW BUTTON -->
-        <button
-          (click)="processPayment()"
-          [disabled]="!isFormValid() || isProcessing"
-          class="w-full mt-6 py-3 rounded-lg font-semibold transition
-                 bg-green-600 text-white
-                 disabled:bg-gray-300 disabled:cursor-not-allowed
-                 hover:bg-green-700 flex items-center justify-center gap-2"
-        >
-          <span *ngIf="!isProcessing">
-            <span class="text-lg">💳</span>
-            <span>Pay ₹{{ getTotalWithGst() | number:'1.2-2' }}</span>
-          </span>
-          <span *ngIf="isProcessing">
-            <span class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
-            <span>Processing Payment...</span>
-          </span>
-        </button>
+        <!-- PAY NOW BUTTON MOVED TO RIGHT COLUMN -->
 
         <!-- SECURITY BADGES -->
         <div class="flex flex-wrap justify-center gap-6 mt-6 pt-6 border-t">
@@ -271,7 +254,8 @@
           
           <div class="flex justify-between text-gray-600">
             <span>Delivery Charge</span>
-            <span class="text-green-600">FREE</span>
+            <span *ngIf="getDeliveryCharge() === 0" class="text-green-600">FREE</span>
+            <span *ngIf="getDeliveryCharge() > 0">₹{{ getDeliveryCharge() | number:'1.2-2' }}</span>
           </div>
           
           <div class="flex justify-between text-gray-600">
@@ -289,6 +273,25 @@
             </p>
           </div>
         </div>
+
+        <!-- PAY NOW BUTTON -->
+        <button
+          (click)="processPayment()"
+          [disabled]="!isFormValid() || isProcessing"
+          class="w-full mt-6 py-4 rounded-xl font-semibold transition
+                 bg-green-600 text-white shadow-md
+                 disabled:bg-gray-300 disabled:cursor-not-allowed
+                 hover:bg-green-700 flex items-center justify-center gap-2"
+        >
+          <span *ngIf="!isProcessing">
+            <span class="text-lg">💳</span>
+            <span>Pay ₹{{ getTotalWithGst() | number:'1.2-2' }}</span>
+          </span>
+          <span *ngIf="isProcessing">
+            <span class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+            <span>Processing Payment...</span>
+          </span>
+        </button>
 
         <!-- PAYMENT TERMS -->
         <div class="mt-6 pt-6 border-t">

@@ -1,6 +1,6 @@
 import { Component, Inject, PLATFORM_ID, HostListener, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule, isPlatformBrowser, Location } from '@angular/common';
 import { ClickOutsideDirective } from '../../directives/click-outside.directive';
 import { CartService } from '../../services/cart.service';
 import { AuthService } from '../../services/auth.service';
@@ -52,7 +52,8 @@ export class HeaderComponent {
   constructor(
     private cartService: CartService,
     private authService: AuthService,
-    private router: Router,
+    public router: Router,
+    private location: Location,
     @Inject(PLATFORM_ID) platformId: Object,
     private cdr: ChangeDetectorRef
   ) {
@@ -108,6 +109,14 @@ export class HeaderComponent {
     if (this.isBrowser) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  }
+
+  goBack() {
+    this.location.back();
+  }
+
+  isHomePage(): boolean {
+    return this.router.url === '/';
   }
 
   isLoggedIn(): boolean {

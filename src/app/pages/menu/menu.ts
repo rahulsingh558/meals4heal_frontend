@@ -3,6 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CartService, CartItem } from '../../services/cart.service';
 import { FoodApiService, ApiFood } from '../../services/food-api.service';
+import { ReviewService } from '../../services/review.service';
 import { Subscription } from 'rxjs';
 import { Food } from '../../models/food';
 import { Addon } from '../../models/addon';
@@ -21,6 +22,8 @@ interface MenuFood extends Food {
   freeAddonIds: number[];
   addons: Addon[];
   showAllAddons?: boolean;
+  averageRating?: number;
+  reviewCount?: number;
 }
 
 /* =========================
@@ -57,6 +60,14 @@ export class Menu implements OnInit, OnDestroy {
   lastCartItemToRepeat: CartItem | null = null;
 
   /* =========================
+     REVIEWS MODAL STATE
+  ========================== */
+  showReviewsModal = false;
+  selectedReviewFood: MenuFood | null = null;
+  foodReviews: any[] = [];
+  loadingReviews = false;
+
+  /* =========================
      WISHLIST & CART STATE
   ========================== */
   wishlist: { id: any; name: string; basePrice: number }[] = [];
@@ -70,6 +81,7 @@ export class Menu implements OnInit, OnDestroy {
   constructor(
     private cartService: CartService,
     private foodApi: FoodApiService,
+    private reviewService: ReviewService,
     @Inject(PLATFORM_ID) platformId: Object,
     private cdr: ChangeDetectorRef
   ) {
@@ -158,6 +170,8 @@ export class Menu implements OnInit, OnDestroy {
       image: `${environment.backendUrl}${food.image}`,
       addons: [...freeAddons, ...premiumAddons],
       freeAddonIds: freeAddons.map(a => a.id),
+      averageRating: (food as any).averageRating || 0,
+      reviewCount: (food as any).reviewCount || 0
     };
   }
 
@@ -374,5 +388,43 @@ export class Menu implements OnInit, OnDestroy {
     });
 
     this.closeAddonPopup();
+  }
+
+  /* =========================
+     REVIEWS
+  ========================== */
+  openReviewsModal(food: MenuFood) {
+    this.selectedReviewFood = food;
+    this.showReviewsModal = true;
+    this.loadingReviews = true;
+    this.foodReviews = [];
+
+    this.reviewService.getReviewsByFood(String(food.id)).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.foodReviews = res.reviews;
+        }
+        this.loadingReviews = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error fetching reviews:', err);
+        this.loadingReviews = false;
+        this.cdr.detectChanges();
+      }
+    });
+
+    if (this.isBrowser) {
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  closeReviewsModal() {
+    this.showReviewsModal = false;
+    this.selectedReviewFood = null;
+    this.foodReviews = [];
+    if (this.isBrowser) {
+      document.body.style.overflow = '';
+    }
   }
 }

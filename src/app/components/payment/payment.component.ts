@@ -173,11 +173,15 @@ export class PaymentComponent implements OnInit {
 
   // Calculate GST (5%)
   getGst(): number {
-    return this.orderTotal * 0.05;
+    return Math.round(this.orderTotal * 0.05);
+  }
+
+  getDeliveryCharge(): number {
+    return this.orderTotal < 299 ? 40 : 0;
   }
 
   // Get total with GST
   getTotalWithGst(): number {
-    return this.orderTotal + this.getGst();
+    return this.orderTotal + this.getDeliveryCharge() + this.getGst();
   }
 }

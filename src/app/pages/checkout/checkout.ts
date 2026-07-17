@@ -6,6 +6,7 @@ import { Observable } from 'rxjs';
 import { CartService, CartItem } from '../../services/cart.service';
 import { AddressService } from '../../services/address.service';
 import { OrderService, Order, OrderItem } from '../../services/order.service';
+import { SettingsService, AppSettings, DEFAULT_SETTINGS } from '../../services/settings.service';
 import { Address } from '../../pages/address/address';
 
 declare var Razorpay: any;
@@ -36,6 +37,9 @@ export class Checkout implements OnInit {
   isBrowser = false;
   deliveryInstructions = '';
   paymentMethod = 'cod'; // 'cod' or 'online'
+
+  // Pricing settings (loaded from backend, falls back to defaults)
+  settings: AppSettings = { ...DEFAULT_SETTINGS };
 
   // User info
   userId: string | null = null;
@@ -98,6 +102,7 @@ export class Checkout implements OnInit {
     private cartService: CartService,
     private addressService: AddressService,
     private orderService: OrderService,
+    private settingsService: SettingsService,
     public router: Router,
     private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) platformId: Object
@@ -106,6 +111,12 @@ export class Checkout implements OnInit {
   }
 
   ngOnInit(): void {
+    // Load pricing settings (tax, delivery charge, free-delivery threshold)
+    this.settingsService.getSettings().subscribe(settings => {
+      this.settings = settings;
+      this.cdr.detectChanges();
+    });
+
     // Check if user is logged in
     if (this.isBrowser) {
       const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -239,11 +250,13 @@ export class Checkout implements OnInit {
   }
 
   getDeliveryCharge(): number {
-    return this.getGrandTotal() < 299 ? 40 : 0;
+    return this.getGrandTotal() < this.settings.freeDeliveryThreshold
+      ? this.settings.deliveryCharge
+      : 0;
   }
 
   getGst(): number {
-    return Math.round(this.getGrandTotal() * 0.05);
+    return Math.round(this.getGrandTotal() * (this.settings.taxRate / 100));
   }
 
   getTotalAmount(): number {
@@ -342,7 +355,7 @@ export class Checkout implements OnInit {
             this.initiateRazorpayPayment(response.order);
           } else {
             // Clear cart
-            this.cartService.clearCart();
+            this.cartService.clearCart().subscribe();
 
             // Navigate to orders page with success
             this.router.navigate(['/orders']).then(() => {
@@ -438,7 +451,7 @@ export class Checkout implements OnInit {
     }).subscribe({
       next: (res) => {
         if (res.success) {
-          this.cartService.clearCart();
+          this.cartService.clearCart().subscribe();
           this.isPlacingOrder = false;
           this.router.navigate(['/orders']).then(() => {
             this.showToast('Payment successful! Order placed.', 'success');

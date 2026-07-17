@@ -80,7 +80,7 @@ export class Home implements AfterViewInit {
       calories: '320 cal',
       ingredients: ['Moong', 'Cucumber', 'Tomato', 'Corn', 'Lemon Dressing'],
       image: `${environment.backendUrl}/uploads/seed/Moong%20bowl.jpeg`,
-      basePrice: 80
+      basePrice: 90
     },
     {
       type: 'egg',
@@ -89,7 +89,7 @@ export class Home implements AfterViewInit {
       calories: '320 cal',
       ingredients: ['Egg', 'Onion', 'Capsicum', 'Corn', 'Tomato', 'Lemon Dressing'],
       image: `${environment.backendUrl}/uploads/seed/egg%20bowl.jpeg`,
-      basePrice: 110
+      basePrice: 60
     },
     {
       type: 'paneer',
@@ -120,8 +120,8 @@ export class Home implements AfterViewInit {
     {
       name: 'Ayushman',
       role: 'Fitness Influencer',
-      text: 'As a fitness trainer, I recommend meals4heal to all my clients. The protein bowls are perfectly balanced and help in muscle recovery.',
-      rating: 5,
+      text: 'The protein bowls are perfectly balanced and help in protein intake for vegetarian and non vegetarians.',
+      rating: 4,
       avatar: `${environment.backendUrl}/uploads/review/ayushman.jpg`
     },
     {
@@ -135,7 +135,7 @@ export class Home implements AfterViewInit {
       name: 'Lalit Kr Choudhary',
       role: 'Nutritionist',
       text: 'The quality of ingredients and nutritional balance is impressive. My patients love the variety and taste while staying healthy.',
-      rating: 4,
+      rating: 5,
       avatar: `${environment.backendUrl}/uploads/review/lalit.jpg`
     }
   ];

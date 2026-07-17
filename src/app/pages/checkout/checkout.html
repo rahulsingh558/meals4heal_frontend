@@ -232,7 +232,7 @@
           </div>
 
           <div class="flex justify-between text-gray-600">
-            <span>GST - 5%</span>
+            <span>GST - {{ settings.taxRate }}%</span>
             <span>₹{{ getGst() | number:'1.2-2' }}</span>
           </div>
 
@@ -242,7 +242,7 @@
               <span>₹{{ getTotalAmount() | number:'1.2-2' }}</span>
             </div>
             <p class="text-xs text-gray-500 mt-1">
-              (Includes gst - 5%)
+              (Includes gst - {{ settings.taxRate }}%)
             </p>
           </div>
         </div>

@@ -101,8 +101,13 @@
           <!-- NAME + WISHLIST -->
           <div class="mb-3 flex justify-between items-start gap-2">
             <div class="flex-1">
-              <h3 class="text-xl font-bold text-gray-800 mb-1">
+              <h3 class="text-xl font-bold text-gray-800 mb-1 flex items-center flex-wrap gap-2">
                 {{ food.name }}
+                <div *ngIf="(food.reviewCount || 0) > 0" class="flex items-center gap-1 text-sm bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full border border-yellow-200 shadow-sm cursor-pointer hover:bg-yellow-100 transition" (click)="openReviewsModal(food)">
+                  <span class="text-yellow-500">★</span>
+                  <span class="font-bold">{{ food.averageRating | number:'1.1-1' }}</span>
+                  <span class="text-xs text-yellow-600">({{ food.reviewCount }})</span>
+                </div>
               </h3>
               <p class="text-sm text-gray-500 mb-2">
                 {{ food.subtitle }}
@@ -521,6 +526,50 @@
                font-semibold shadow-md hover:shadow-lg">
         Repeat Last
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- READ REVIEWS MODAL -->
+<div *ngIf="showReviewsModal && selectedReviewFood"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     aria-modal="true"
+     role="dialog">
+  
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" (click)="closeReviewsModal()"></div>
+
+  <div class="relative bg-white rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl animate-[modalFadeIn_0.3s_ease-out]">
+    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+      <div>
+        <h3 class="text-xl font-bold text-gray-800">{{ selectedReviewFood.name }} Reviews</h3>
+        <div class="flex items-center gap-2 mt-1 text-yellow-600 text-sm">
+          <span class="text-yellow-500 text-lg">★</span>
+          <span class="font-bold text-base">{{ selectedReviewFood.averageRating | number:'1.1-1' }}</span>
+          <span>based on {{ selectedReviewFood.reviewCount }} reviews</span>
+        </div>
+      </div>
+      <button (click)="closeReviewsModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold transition">&times;</button>
+    </div>
+
+    <div class="p-6 overflow-y-auto flex-1 bg-gray-50">
+      <div *ngIf="loadingReviews" class="text-center text-gray-500 py-8">
+        Loading reviews...
+      </div>
+      <div *ngIf="!loadingReviews && foodReviews.length === 0" class="text-center text-gray-500 py-8">
+        No reviews yet.
+      </div>
+      <div *ngIf="!loadingReviews && foodReviews.length > 0" class="space-y-4">
+        <div *ngFor="let review of foodReviews" class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+          <div class="flex justify-between items-start mb-2">
+            <span class="font-semibold text-gray-800">{{ review.userId?.name || 'User' }}</span>
+            <div class="flex text-yellow-400 text-sm">
+              <span *ngFor="let star of [1,2,3,4,5]" [class.text-gray-300]="star > review.rating">★</span>
+            </div>
+          </div>
+          <p *ngIf="review.comment" class="text-gray-600 text-sm">{{ review.comment }}</p>
+          <span class="text-xs text-gray-400 mt-2 block">{{ review.createdAt | date:'mediumDate' }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>

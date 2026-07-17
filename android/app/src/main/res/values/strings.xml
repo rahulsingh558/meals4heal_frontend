@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">meals4heal</string>
+    <string name="title_activity_main">meals4heal</string>
+    <string name="package_name">com.meals4heal.app</string>
+    <string name="custom_url_scheme">com.meals4heal.app</string>
+</resources>

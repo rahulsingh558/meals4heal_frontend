@@ -1,16 +1,71 @@
 <div class="min-h-screen bg-green-50 py-10 px-4">
   <div class="max-w-4xl mx-auto">
 
-    <h1 class="text-3xl font-bold text-green-700 mb-8">
+    <h1 class="text-3xl font-bold text-green-700 mb-6">
       My Orders
     </h1>
+
+    <!-- SUMMARY STATS -->
+    <div *ngIf="!loading && orders.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl shadow p-4 text-center">
+        <p class="text-2xl font-bold text-green-700">{{ orders.length }}</p>
+        <p class="text-xs text-gray-500 mt-1">Total Orders</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 text-center">
+        <p class="text-2xl font-bold text-indigo-600">{{ activeOrdersCount }}</p>
+        <p class="text-xs text-gray-500 mt-1">Active</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 text-center">
+        <p class="text-2xl font-bold text-blue-600">{{ deliveredOrdersCount }}</p>
+        <p class="text-xs text-gray-500 mt-1">Delivered</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 text-center">
+        <p class="text-2xl font-bold text-green-700">₹{{ totalSpent }}</p>
+        <p class="text-xs text-gray-500 mt-1">Total Spent</p>
+      </div>
+    </div>
+
+    <!-- FILTERS & SEARCH -->
+    <div *ngIf="!loading && orders.length > 0" class="flex flex-col sm:flex-row gap-3 mb-6">
+      <div class="flex gap-2 overflow-x-auto">
+        <button (click)="setFilter('all')"
+          class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition cursor-pointer"
+          [ngClass]="activeFilter === 'all' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'">
+          All ({{ filterCount('all') }})
+        </button>
+        <button (click)="setFilter('active')"
+          class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition cursor-pointer"
+          [ngClass]="activeFilter === 'active' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'">
+          Active ({{ filterCount('active') }})
+        </button>
+        <button (click)="setFilter('delivered')"
+          class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition cursor-pointer"
+          [ngClass]="activeFilter === 'delivered' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'">
+          Delivered ({{ filterCount('delivered') }})
+        </button>
+        <button (click)="setFilter('cancelled')"
+          class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition cursor-pointer"
+          [ngClass]="activeFilter === 'cancelled' ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'">
+          Cancelled ({{ filterCount('cancelled') }})
+        </button>
+      </div>
+      <div class="relative flex-1 sm:max-w-xs sm:ml-auto">
+        <input [(ngModel)]="searchTerm" type="text" placeholder="Search order # or item..."
+          class="w-full border border-gray-200 rounded-full pl-10 pr-4 py-2 text-sm focus:ring focus:ring-green-200 focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+    </div>
 
     <!-- LOADING STATE -->
     <div *ngIf="loading" class="bg-white p-8 rounded-xl shadow text-center">
       <p class="text-gray-600">Loading orders...</p>
     </div>
 
-    <!-- EMPTY STATE -->
+    <!-- EMPTY STATE (no orders at all) -->
     <div *ngIf="!loading && orders.length === 0" class="bg-white p-8 rounded-xl shadow text-center">
       <p class="text-gray-600 mb-4">
         You haven't placed any orders yet.
@@ -20,27 +75,65 @@
       </a>
     </div>
 
+    <!-- EMPTY STATE (filtered) -->
+    <div *ngIf="!loading && orders.length > 0 && filteredOrders.length === 0"
+      class="bg-white p-8 rounded-xl shadow text-center">
+      <p class="text-gray-600">No orders match your filter or search.</p>
+    </div>
+
     <!-- ORDERS LIST -->
-    <div *ngFor="let order of orders" class="bg-white rounded-xl shadow mb-6 p-6">
+    <div *ngFor="let order of filteredOrders" class="bg-white rounded-xl shadow mb-6 p-6">
       <div class="flex justify-between mb-4">
         <div>
-          <p class="font-semibold">
-            Order #{{ order.orderNumber }}
-          </p>
-          <p class="text-sm text-gray-500">
-            {{ formatDate(order.createdAt) }} {{ formatTime(order.createdAt) }}
-          </p>
-          <p class="text-sm font-medium mt-1" [class.text-green-600]="order.orderStatus === 'delivered'"
-            [class.text-blue-600]="order.orderStatus === 'confirmed' || order.orderStatus === 'preparing'"
-            [class.text-green-600]="order.orderStatus === 'out_for_delivery'"
-            [class.text-red-600]="order.orderStatus === 'cancelled'">
-            {{ getStatusText(order.orderStatus) }}
+          <div class="flex items-center gap-2 flex-wrap">
+            <p class="font-semibold">
+              Order #{{ order.orderNumber }}
+            </p>
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium" [ngClass]="getStatusClass(order.orderStatus)">
+              {{ getStatusText(order.orderStatus) }}
+            </span>
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium"
+              [ngClass]="getPaymentStatusClass(order.paymentStatus)">
+              {{ getPaymentStatusText(order.paymentStatus) }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-500 mt-1">
+            {{ formatDate(order.createdAt) }} · {{ formatTime(order.createdAt) }} · {{ itemCount(order) }} item(s)
           </p>
         </div>
 
-        <p class="font-bold text-green-700">
+        <p class="font-bold text-green-700 whitespace-nowrap">
           ₹{{ order.totalAmount }}
         </p>
+      </div>
+
+      <!-- PROGRESS TIMELINE -->
+      <div *ngIf="order.orderStatus !== 'cancelled'" class="mb-5">
+        <div class="flex items-center">
+          <ng-container *ngFor="let step of progressSteps; let i = index; let last = last">
+            <div class="flex flex-col items-center flex-shrink-0">
+              <div class="w-3 h-3 rounded-full transition"
+                [ngClass]="isStepComplete(order, step) ? 'bg-green-600' : 'bg-gray-300'"
+                [class.ring-4]="isStepActive(order, step)"
+                [class.ring-green-200]="isStepActive(order, step)"></div>
+            </div>
+            <div *ngIf="!last" class="flex-1 h-0.5 mx-1"
+              [ngClass]="currentStepIndex(order.orderStatus) > i ? 'bg-green-600' : 'bg-gray-300'"></div>
+          </ng-container>
+        </div>
+        <div class="flex justify-between mt-1.5 text-[10px] text-gray-500">
+          <span>Placed</span>
+          <span>Confirmed</span>
+          <span>Preparing</span>
+          <span>On the way</span>
+          <span>Delivered</span>
+        </div>
+      </div>
+
+      <!-- CANCELLED NOTICE -->
+      <div *ngIf="order.orderStatus === 'cancelled'"
+        class="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-700">
+        This order was cancelled{{ order.cancelReason ? ': ' + order.cancelReason : '.' }}
       </div>
 
       <div class="border-t pt-4 mb-4">
@@ -55,22 +148,205 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex gap-2 border-t pt-4">
-        <button (click)="openTrackModal(order)"
-          class="flex-1 bg-green-100 text-green-700 border border-green-200 py-2 rounded font-medium text-sm hover:bg-green-200 transition cursor-pointer">
+      <div class="flex flex-wrap gap-2 border-t pt-4">
+        <button (click)="openDetailsModal(order)"
+          class="flex-1 min-w-[120px] bg-green-600 text-white py-2 rounded font-medium text-sm hover:bg-green-700 transition cursor-pointer">
+          View Details
+        </button>
+        <button *ngIf="order.orderStatus !== 'delivered' && order.orderStatus !== 'cancelled'"
+          (click)="openTrackModal(order)"
+          class="flex-1 min-w-[120px] bg-green-100 text-green-700 border border-green-200 py-2 rounded font-medium text-sm hover:bg-green-200 transition cursor-pointer">
           Track Order
         </button>
+        <button *ngIf="order.orderStatus === 'delivered'" (click)="openReviewModal(order)"
+          class="flex-1 min-w-[120px] bg-yellow-100 text-yellow-700 border border-yellow-200 py-2 rounded font-medium text-sm hover:bg-yellow-200 transition cursor-pointer">
+          Review Items
+        </button>
+        <button *ngIf="order.orderStatus === 'delivered' || order.orderStatus === 'cancelled'"
+          (click)="reorder(order)" [disabled]="reorderingId === order._id"
+          class="flex-1 min-w-[120px] bg-blue-100 text-blue-700 border border-blue-200 py-2 rounded font-medium text-sm hover:bg-blue-200 transition cursor-pointer disabled:opacity-50">
+          {{ reorderingId === order._id ? 'Adding...' : 'Reorder' }}
+        </button>
         <button *ngIf="canUpdateAddress(order.orderStatus)" (click)="openAddressModal(order)"
-          class="flex-1 bg-gray-100 text-gray-700 border border-gray-200 py-2 rounded font-medium text-sm hover:bg-gray-200 transition cursor-pointer">
+          class="flex-1 min-w-[120px] bg-gray-100 text-gray-700 border border-gray-200 py-2 rounded font-medium text-sm hover:bg-gray-200 transition cursor-pointer">
           Update Address
         </button>
+        <button *ngIf="canCancel(order.orderStatus)" (click)="openCancelModal(order)"
+          class="flex-1 min-w-[120px] bg-red-50 text-red-600 border border-red-200 py-2 rounded font-medium text-sm hover:bg-red-100 transition cursor-pointer">
+          Cancel Order
+        </button>
         <button (click)="openHelpModal(order)"
-          class="flex-1 bg-gray-100 text-gray-700 border border-gray-200 py-2 rounded font-medium text-sm hover:bg-gray-200 transition cursor-pointer">
+          class="flex-1 min-w-[120px] bg-gray-100 text-gray-700 border border-gray-200 py-2 rounded font-medium text-sm hover:bg-gray-200 transition cursor-pointer">
           Help
         </button>
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- Order Details Modal -->
+<div *ngIf="showDetailsModal && detailsOrder" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black bg-opacity-50" (click)="closeDetailsModal()"></div>
+  <div class="relative bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-start mb-4">
+      <div>
+        <h3 class="text-xl font-bold">Order #{{ detailsOrder.orderNumber }}</h3>
+        <p class="text-sm text-gray-500">
+          Placed on {{ formatDate(detailsOrder.createdAt) }} at {{ formatTime(detailsOrder.createdAt) }}
+        </p>
+      </div>
+      <button (click)="closeDetailsModal()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold leading-none">&times;</button>
+    </div>
+
+    <!-- Status Badges -->
+    <div class="flex flex-wrap gap-2 mb-5">
+      <span class="text-xs px-3 py-1 rounded-full font-medium" [ngClass]="getStatusClass(detailsOrder.orderStatus)">
+        {{ getStatusText(detailsOrder.orderStatus) }}
+      </span>
+      <span class="text-xs px-3 py-1 rounded-full font-medium" [ngClass]="getPaymentStatusClass(detailsOrder.paymentStatus)">
+        {{ getPaymentStatusText(detailsOrder.paymentStatus) }}
+      </span>
+      <span *ngIf="detailsOrder.trackingCode"
+        class="text-xs px-3 py-1 rounded-full font-medium bg-indigo-100 text-indigo-800">
+        Tracking: {{ detailsOrder.trackingCode }}
+      </span>
+    </div>
+
+    <!-- Items -->
+    <div class="mb-5">
+      <h4 class="font-semibold text-gray-800 mb-2">Items</h4>
+      <div class="border rounded-lg divide-y">
+        <div *ngFor="let item of detailsOrder.items" class="p-3">
+          <div class="flex justify-between text-sm">
+            <span class="font-medium">{{ item.name }} × {{ item.quantity }}</span>
+            <span>₹{{ item.totalPrice }}</span>
+          </div>
+          <div *ngIf="item.addons && item.addons.length" class="mt-1 pl-2">
+            <p *ngFor="let addon of item.addons" class="text-xs text-gray-500">
+              + {{ addon.name }} (₹{{ addon.price }})
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bill Details -->
+    <div class="mb-5">
+      <h4 class="font-semibold text-gray-800 mb-2">Bill Details</h4>
+      <div class="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-600">Subtotal</span>
+          <span>₹{{ detailsOrder.subtotal }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Delivery Charge</span>
+          <span>{{ detailsOrder.deliveryCharge ? '₹' + detailsOrder.deliveryCharge : 'FREE' }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-600">Tax</span>
+          <span>₹{{ detailsOrder.tax }}</span>
+        </div>
+        <div *ngIf="detailsOrder.discount" class="flex justify-between text-green-600">
+          <span>Discount</span>
+          <span>−₹{{ detailsOrder.discount }}</span>
+        </div>
+        <div class="flex justify-between font-bold text-base border-t pt-2 mt-1">
+          <span>Total</span>
+          <span class="text-green-700">₹{{ detailsOrder.totalAmount }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment & Delivery -->
+    <div class="grid md:grid-cols-2 gap-4 mb-5">
+      <div>
+        <h4 class="font-semibold text-gray-800 mb-2">Payment</h4>
+        <div class="bg-gray-50 rounded-lg p-4 text-sm space-y-1">
+          <p><span class="text-gray-600">Method:</span> {{ getPaymentMethodText(detailsOrder.paymentMethod) }}</p>
+          <p><span class="text-gray-600">Status:</span> {{ getPaymentStatusText(detailsOrder.paymentStatus) }}</p>
+        </div>
+      </div>
+      <div>
+        <h4 class="font-semibold text-gray-800 mb-2">Delivery Address</h4>
+        <div class="bg-gray-50 rounded-lg p-4 text-sm text-gray-700">
+          <p>{{ detailsOrder.deliveryAddress.street }}</p>
+          <p>{{ detailsOrder.deliveryAddress.city }}, {{ detailsOrder.deliveryAddress.state }} {{ detailsOrder.deliveryAddress.zipCode }}</p>
+          <p *ngIf="detailsOrder.deliveryAddress.landmark" class="text-gray-500">
+            Landmark: {{ detailsOrder.deliveryAddress.landmark }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact -->
+    <div class="mb-5">
+      <h4 class="font-semibold text-gray-800 mb-2">Contact</h4>
+      <div class="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 space-y-1">
+        <p>{{ detailsOrder.customerName }}</p>
+        <p *ngIf="detailsOrder.customerPhone">{{ detailsOrder.customerPhone }}</p>
+        <p *ngIf="detailsOrder.customerEmail">{{ detailsOrder.customerEmail }}</p>
+      </div>
+    </div>
+
+    <!-- Special Instructions -->
+    <div *ngIf="detailsOrder.specialInstructions" class="mb-5">
+      <h4 class="font-semibold text-gray-800 mb-2">Special Instructions</h4>
+      <p class="bg-yellow-50 border border-yellow-100 rounded-lg p-4 text-sm text-gray-700">
+        {{ detailsOrder.specialInstructions }}
+      </p>
+    </div>
+
+    <!-- Timeline -->
+    <div class="mb-2">
+      <h4 class="font-semibold text-gray-800 mb-2">Timeline</h4>
+      <div class="text-sm text-gray-600 space-y-1">
+        <p>📦 Placed: {{ formatDate(detailsOrder.createdAt) }} at {{ formatTime(detailsOrder.createdAt) }}</p>
+        <p *ngIf="detailsOrder.deliveredAt" class="text-green-600">
+          ✅ Delivered: {{ formatDate(detailsOrder.deliveredAt) }} at {{ formatTime(detailsOrder.deliveredAt) }}
+        </p>
+        <p *ngIf="detailsOrder.cancelledAt" class="text-red-600">
+          ❌ Cancelled: {{ formatDate(detailsOrder.cancelledAt) }} at {{ formatTime(detailsOrder.cancelledAt) }}
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-6 flex justify-end gap-2 print:hidden">
+      <button (click)="printOrder()"
+        class="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition cursor-pointer">
+        Print
+      </button>
+      <button (click)="closeDetailsModal()"
+        class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition cursor-pointer">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Cancel Order Modal -->
+<div *ngIf="showCancelModal && cancelOrderTarget" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black bg-opacity-50" (click)="closeCancelModal()"></div>
+  <div class="relative bg-white rounded-xl max-w-sm w-full p-6 shadow-2xl">
+    <div class="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+      ⚠️
+    </div>
+    <h3 class="text-xl font-bold text-center mb-2">Cancel Order #{{ cancelOrderTarget.orderNumber }}?</h3>
+    <p class="text-gray-600 text-center text-sm mb-4">
+      This action cannot be undone. Please let us know why you're cancelling (optional).
+    </p>
+    <textarea [(ngModel)]="cancelReason" rows="3" placeholder="Reason for cancellation..."
+      class="w-full border rounded-lg p-2 text-sm focus:ring focus:ring-red-200 focus:outline-none mb-4"></textarea>
+    <div class="flex gap-2">
+      <button (click)="closeCancelModal()" [disabled]="isCancelling"
+        class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition cursor-pointer disabled:opacity-50">
+        Keep Order
+      </button>
+      <button (click)="confirmCancel()" [disabled]="isCancelling"
+        class="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition cursor-pointer disabled:opacity-50">
+        {{ isCancelling ? 'Cancelling...' : 'Cancel Order' }}
+      </button>
+    </div>
   </div>
 </div>
 
@@ -187,5 +463,61 @@
     </div>
 
     <button (click)="closeHelpModal()" class="mt-6 text-gray-500 text-sm hover:underline cursor-pointer">Close</button>
+  </div>
+</div>
+
+<!-- Review Modal -->
+<div *ngIf="showReviewModal && reviewOrder" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black bg-opacity-50" (click)="closeReviewModal()"></div>
+  <div class="relative bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-bold">Review Your Order Items</h3>
+      <button (click)="closeReviewModal()" class="text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
+    </div>
+
+    <div class="space-y-6">
+      <div *ngFor="let item of reviewOrder.items" class="border rounded-lg p-4 bg-gray-50">
+        <div class="flex justify-between items-start mb-3">
+          <h4 class="font-bold text-gray-800">{{ item.name }}</h4>
+        </div>
+
+        <div *ngIf="reviewState[item.foodId]">
+          <div *ngIf="reviewState[item.foodId].isSubmitted" class="text-green-600 font-medium flex items-center gap-2 bg-green-50 p-3 rounded">
+            ✅ Thank you for your review!
+          </div>
+
+          <div *ngIf="!reviewState[item.foodId].isSubmitted">
+            <div class="mb-3">
+              <span class="block text-sm font-medium text-gray-700 mb-1">Rating:</span>
+              <div class="flex gap-1 text-2xl text-gray-300">
+                <button *ngFor="let star of [1, 2, 3, 4, 5]" (click)="setRating(item.foodId, star)"
+                  class="focus:outline-none transition-colors"
+                  [class.text-yellow-400]="star <= reviewState[item.foodId].rating">
+                  ★
+                </button>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Comment (Optional):</label>
+              <textarea [(ngModel)]="reviewState[item.foodId].comment" rows="2"
+                class="w-full border rounded-lg p-2 text-sm focus:ring focus:ring-green-200"
+                placeholder="How was it?"></textarea>
+            </div>
+
+            <p *ngIf="reviewState[item.foodId].error" class="text-xs text-red-500 mb-2">
+              ⚠️ {{ reviewState[item.foodId].error }}
+            </p>
+
+            <div class="flex justify-end">
+              <button (click)="submitReview(item.foodId)" [disabled]="reviewState[item.foodId].isSubmitting"
+                class="bg-green-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-green-700 transition disabled:opacity-50">
+                {{ reviewState[item.foodId].isSubmitting ? 'Submitting...' : 'Submit Review' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

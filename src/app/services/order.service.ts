@@ -38,6 +38,7 @@ export interface Order {
     paymentStatus: string;
     orderStatus: string;
     specialInstructions?: string;
+    trackingCode?: string;
     createdAt?: Date;
     updatedAt?: Date;
     deliveredAt?: Date;
